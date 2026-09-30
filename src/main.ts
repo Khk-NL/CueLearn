@@ -1,3 +1,4 @@
+import '@/backend/startup/migrateLegacyProfile';
 import 'dotenv/config';
 import 'reflect-metadata';
 import type LocalAiService from '@/backend/services/LocalAiService';

@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('electron', () => ({
     app: {
         isPackaged: false,
-        getPath: () => '/tmp/dashplayer-builtin-dict-test-userdata',
+        getPath: () => '/tmp/cuelearn-builtin-dict-test-userdata',
         getVersion: () => '6.1.0',
     },
     ipcMain: undefined,
@@ -123,7 +123,7 @@ describe('预置词典查询', () => {
     });
 
     it('数据文件缺失时显式抛错', () => {
-        const missingPath = '/nonexistent/dashplayer/dictionary.sqlite';
+        const missingPath = '/nonexistent/cuelearn/dictionary.sqlite';
         const store = new BuiltinDictionaryStoreImpl(missingPath);
 
         expect(() => store.lookup('cancel')).toThrow(/缺失/);

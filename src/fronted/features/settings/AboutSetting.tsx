@@ -95,14 +95,14 @@ const AboutSetting = () => {
                     <div className="flex items-center gap-3.5">
                         <img
                             src={theme === 'dark' ? logoDark : logoLight}
-                            alt="DashPlayer Logo"
+                            alt="CueLearn Logo"
                             className="w-12 h-12 object-contain select-none shrink-0"
                             draggable={false}
                         />
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="text-base font-bold tracking-tight text-foreground font-serif">
-                                    DashPlayer
+                                    CueLearn
                                 </h2>
                                 {currentVersion && (
                                     <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-mono font-medium text-foreground/80 border border-border">
@@ -129,7 +129,7 @@ const AboutSetting = () => {
                             {t('about.update.checkNow', { defaultValue: '检查更新' })}
                         </Button>
                         <Button
-                            onClick={() => openUrl('https://github.com/solidSpoon/DashPlayer/releases/latest')}
+                            onClick={() => openUrl('https://github.com/Khk-NL/CueLearn/releases/latest')}
                             size="sm"
                             variant="ghost"
                             className="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -173,7 +173,7 @@ const AboutSetting = () => {
                             </div>
 
                             <Button
-                                onClick={() => openUrl(updateResult?.releases[0]?.url || 'https://github.com/solidSpoon/DashPlayer/releases/latest')}
+                                onClick={() => openUrl(updateResult?.releases[0]?.url || 'https://github.com/Khk-NL/CueLearn/releases/latest')}
                                 size="sm"
                                 variant="default"
                                 className="gap-1 h-7 px-2.5 text-xs font-medium shrink-0"
@@ -216,7 +216,7 @@ const AboutSetting = () => {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openUrl('https://solidspoon.xyz/DashPlayer/home.html')}
+                        onClick={() => openUrl('https://github.com/Khk-NL/CueLearn/blob/main/docs/course-learning.md')}
                         className="gap-1.5 h-8 text-xs text-muted-foreground hover:text-foreground"
                     >
                         {t('common.viewDocs', { defaultValue: '查看文档' })}
@@ -232,7 +232,7 @@ const AboutSetting = () => {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openUrl('https://github.com/solidSpoon/DashPlayer')}
+                        onClick={() => openUrl('https://github.com/Khk-NL/CueLearn')}
                         className="gap-1.5 h-8 text-xs text-muted-foreground hover:text-foreground"
                     >
                         GitHub
@@ -247,7 +247,7 @@ const AboutSetting = () => {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openUrl('https://github.com/solidSpoon/DashPlayer/blob/main/LICENSE')}
+                        onClick={() => openUrl('https://github.com/Khk-NL/CueLearn/blob/main/LICENSE')}
                         className="gap-1.5 h-8 text-xs text-muted-foreground hover:text-foreground"
                     >
                         GNU AGPLv3
@@ -257,7 +257,7 @@ const AboutSetting = () => {
             </SettingCard>
 
             <div className="pt-2 pb-6 text-center text-[11px] text-muted-foreground/60">
-                {t('about.footer', { defaultValue: '由 solidSpoon 用心打造' })} · GNU AGPLv3
+                {t('about.footer', { defaultValue: 'CueLearn 项目组' })} · GNU AGPLv3
             </div>
         </SettingsPageShell>
     );

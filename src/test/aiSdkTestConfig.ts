@@ -37,7 +37,7 @@ const resolveUserDataDir = (): string => {
         // Electron 在 Linux 上会优先使用 XDG_CONFIG_HOME，需与其保持一致。
         base = process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), '.config');
     }
-    return path.join(base, 'DashPlayer');
+    return path.join(base, 'CueLearn');
 };
 
 /**

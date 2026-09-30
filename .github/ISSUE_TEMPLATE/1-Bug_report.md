@@ -19,14 +19,14 @@ labels: ['bug']
 
 <!-- 以下信息可在「设置 → 关于」或日志文件中找到，完整日志路径见文末 -->
 
-- DashPlayer 版本：
+- CueLearn 版本：
 - 安装包类型：exe / msi / dmg / deb / rpm
 - 操作系统及版本：
 - 是否从旧版本升级而来：是 / 否（旧版本号：）
 
 ## 日志
 
-<!-- 日志目录在应用数据目录下的 logs 文件夹：Windows %APPDATA%\DashPlayer\logs；macOS ~/Library/Application Support/DashPlayer/logs；Linux ~/.config/DashPlayer/logs -->
+<!-- 日志目录在应用数据目录下的 logs 文件夹：Windows %APPDATA%\CueLearn\logs；macOS ~/Library/Application Support/CueLearn/logs；Linux ~/.config/CueLearn/logs -->
 
 <details><summary>日志内容（可折叠长日志）</summary>
 
@@ -40,4 +40,4 @@ labels: ['bug']
 
 截图、视频或其他有助于定位问题的材料。
 
-> 安装遇到问题？请先阅读[安装指南（含常见安装失败排查）](https://solidspoon.xyz/DashPlayer/installation.html)。
+> 安装遇到问题？请先阅读本仓库的[使用说明](../../docs/course-learning.md)。

@@ -201,20 +201,20 @@
     "about": {
         "title": "关于与更新",
         "slogan": "专为语言学习与长视频精听打造的智能双语播放器",
-        "description": "DashPlayer 结合端侧离线语音识别模型与大语言模型，帮助你通过影视与演讲素材高效精学外语。",
+        "description": "CueLearn 结合端侧离线语音识别模型与大语言模型，帮助你通过影视与演讲素材高效精学外语。",
         "appInfoTitle": "产品信息",
-        "appInfoDescription": "了解 DashPlayer 的版本与核心特性",
+        "appInfoDescription": "了解 CueLearn 的版本与核心特性",
         "resourcesTitle": "相关资源",
         "resourcesDescription": "访问官方文档、查看源码或提交功能建议",
         "update": {
             "title": "检查更新",
-            "subtitle": "检查并获取 DashPlayer 的最新版本与优化更新",
+            "subtitle": "检查并获取 CueLearn 的最新版本与优化更新",
             "checkNow": "检查更新",
             "retry": "重试",
             "newVersionFound": "发现新版本可用",
             "downloadNow": "前往下载新版本",
             "upToDateTitle": "当前已是最新版本",
-            "upToDateDesc": "DashPlayer v{{version}} 运行中，暂无可用更新。",
+            "upToDateDesc": "CueLearn v{{version}} 运行中，暂无可用更新。",
             "failedTitle": "检查更新失败",
             "failedDescription": "暂时无法获取更新信息，请稍后重试。",
             "errors": {
@@ -243,12 +243,12 @@
             "license": "开源协议",
             "licenseDesc": "基于 AGPLv3 自由开源"
         },
-        "footer": "由 solidSpoon 用心打造",
+        "footer": "CueLearn 项目组",
         "version": "版本 {{version}}"
     },
     "storage": {
         "title": "存储管理",
-        "descriptionLine1": "DashPlayer 会缓存翻译结果，以降低 API 调用成本。",
+        "descriptionLine1": "CueLearn 会缓存翻译结果，以降低 API 调用成本。",
         "descriptionLine2": "缓存数据由系统自动管理，无需手动修改。",
         "resetDatabase": "重置数据库",
         "resetSuccess": "数据库已成功重置",
@@ -259,7 +259,7 @@
         "resetConfirmOk": "确认重置",
         "openLibraryFolder": "打开 Library 文件夹",
         "libraryPathTitle": "存储路径（Library Path）",
-        "libraryPathDescription": "更改存储路径后需重启 DashPlayer 生效。",
+        "libraryPathDescription": "更改存储路径后需重启 CueLearn 生效。",
         "switchCollection": "收藏片段文件夹",
         "saveSettingsFailed": "保存设置失败，请稍后重试：{{message}}",
         "syncWordClipsFailed": "同步词汇工坊片段失败，请稍后再试。",

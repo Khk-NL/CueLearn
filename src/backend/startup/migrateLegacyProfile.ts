@@ -1,0 +1,19 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { app } from 'electron';
+
+/** 在数据库与配置模块加载之前复制旧版用户状态，保留原数据目录不变。 */
+export function migrateLegacyProfile(): void {
+    const target = app.getPath('userData');
+    const source = path.join(path.dirname(target), 'DashPlayer');
+    if (source === target || !fs.existsSync(source)) return;
+    for (const name of ['config.json', 'config.dev.json', 'data', 'data-dev', 'Local Storage']) {
+        const from = path.join(source, name);
+        const to = path.join(target, name);
+        if (!fs.existsSync(from) || fs.existsSync(to)) continue;
+        fs.mkdirSync(target, { recursive: true });
+        fs.cpSync(from, to, { recursive: true, errorOnExist: true });
+    }
+}
+
+migrateLegacyProfile();

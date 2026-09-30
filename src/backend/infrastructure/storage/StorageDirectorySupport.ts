@@ -1,12 +1,13 @@
 import path from 'path';
 import fs from 'fs/promises';
+import fsSync from 'node:fs';
 import { app } from 'electron';
 import { getEnvironmentSuffix } from '@/backend/utils/runtimeEnv';
 import StrUtil from '@/common/utils/str-util';
 import { StorageStatusVO } from '@/common/types/vo/StorageStatusVO';
 import { StorageDirectoryTarget } from '@/backend/services/gateways/storage/StorageDirectoryProvider';
 
-const DEFAULT_STORAGE_FOLDER_NAME = 'DashPlayer';
+const DEFAULT_STORAGE_FOLDER_NAME = 'CueLearn';
 const DEFAULT_COLLECTION = 'default';
 
 /**
@@ -61,7 +62,10 @@ export interface StorageAccessStatus {
 export function resolveStorageRootPath(configuredPath?: string | null): string {
     let rawPath = configuredPath;
     if (StrUtil.isBlank(rawPath)) {
-        rawPath = path.join(app.getPath('documents'), DEFAULT_STORAGE_FOLDER_NAME);
+        const documents = app.getPath('documents');
+        const currentPath = path.join(documents, DEFAULT_STORAGE_FOLDER_NAME);
+        const legacyPath = path.join(documents, 'DashPlayer');
+        rawPath = fsSync.existsSync(currentPath) || !fsSync.existsSync(legacyPath) ? currentPath : legacyPath;
     }
 
     const dirName = path.basename(rawPath);

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('electron', () => ({
     app: {
         isPackaged: false,
-        getPath: () => '/tmp/dashplayer-builtin-dict-test-userdata',
+        getPath: () => '/tmp/cuelearn-builtin-dict-test-userdata',
         getVersion: () => '6.1.0',
     },
     ipcMain: undefined,

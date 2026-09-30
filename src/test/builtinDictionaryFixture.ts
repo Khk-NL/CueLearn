@@ -57,7 +57,7 @@ export function createBuiltinDictionaryFixture(
     words: FixtureBuiltinWord[],
     metaOverrides: Record<string, string> = {},
 ): BuiltinDictionaryFixture {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dashplayer-builtin-dict-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cuelearn-builtin-dict-'));
     const dbPath = path.join(dir, 'dictionary.sqlite');
     const db = new Database(dbPath);
     db.exec(BUILTIN_DICTIONARY_SCHEMA_SQL);

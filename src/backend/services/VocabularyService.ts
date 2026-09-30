@@ -189,7 +189,7 @@ export class VocabularyServiceImpl implements VocabularyService {
             v: '恢复说明',
             c: [
                 {
-                    a: 'DashPlayer',
+                    a: 'CueLearn',
                     t: '如果想恢复默认词表，可以把这一页的内容复制到第一个工作表“单词管理”里，然后再导入。'
                 }
             ]

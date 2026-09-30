@@ -32,7 +32,7 @@
     },
     "appearance": {
         "title": "Appearance",
-        "description": "Configure theme, UI text size, and language preference so DashPlayer fits your workflow.",
+        "description": "Configure theme, UI text size, and language preference so CueLearn fits your workflow.",
         "cardTitle": "Interface & Display Preferences",
         "cardDescription": "Customize your color theme, interface language, and subtitle font sizes.",
         "themeTitle": "Color Theme",
@@ -201,20 +201,20 @@
     "about": {
         "title": "About & Updates",
         "slogan": "The intelligent bilingual media player built for language learners",
-        "description": "DashPlayer combines on-device offline speech recognition with modern LLMs to help you master languages through real video content.",
+        "description": "CueLearn combines on-device offline speech recognition with modern LLMs to help you master languages through real video content.",
         "appInfoTitle": "Product Information",
-        "appInfoDescription": "Explore DashPlayer version and feature highlights",
+        "appInfoDescription": "Explore CueLearn version and feature highlights",
         "resourcesTitle": "Resources",
         "resourcesDescription": "Read documentation, report issues, or contribute",
         "update": {
             "title": "Check for Updates",
-            "subtitle": "Keep DashPlayer updated with the latest features and fixes",
+            "subtitle": "Keep CueLearn updated with the latest features and fixes",
             "checkNow": "Check for Updates",
             "retry": "Retry",
             "newVersionFound": "New version available",
             "downloadNow": "Download New Release",
             "upToDateTitle": "You're up to date",
-            "upToDateDesc": "DashPlayer v{{version}} is running. No updates available.",
+            "upToDateDesc": "CueLearn v{{version}} is running. No updates available.",
             "failedTitle": "Failed to check for updates",
             "failedDescription": "Unable to fetch release details right now. Please try again later.",
             "errors": {
@@ -243,12 +243,12 @@
             "license": "Open Source License",
             "licenseDesc": "Free & open source under AGPLv3"
         },
-        "footer": "Crafted with care by solidSpoon",
+        "footer": "CueLearn contributors",
         "version": "Version {{version}}"
     },
     "storage": {
         "title": "Storage",
-        "descriptionLine1": "DashPlayer caches translation results locally to reduce API costs.",
+        "descriptionLine1": "CueLearn caches translation results locally to reduce API costs.",
         "descriptionLine2": "Cache is managed automatically. Manual modifications are not recommended.",
         "resetDatabase": "Reset Database",
         "resetSuccess": "Database reset successfully",
@@ -259,7 +259,7 @@
         "resetConfirmOk": "Reset now",
         "openLibraryFolder": "Open Library Folder",
         "libraryPathTitle": "Storage Path (Library Path)",
-        "libraryPathDescription": "Restart DashPlayer for storage path changes to take effect.",
+        "libraryPathDescription": "Restart CueLearn for storage path changes to take effect.",
         "switchCollection": "Saved Clips Folder",
         "saveSettingsFailed": "Failed to save settings: {{message}}",
         "syncWordClipsFailed": "Failed to sync Vocabulary Studio clips. Please try again later.",

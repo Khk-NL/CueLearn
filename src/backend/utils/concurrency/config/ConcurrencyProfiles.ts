@@ -55,7 +55,7 @@ export interface ConcurrencyProfiles {
 }
 
 /**
- * DashPlayer 默认并发配置。
+ * CueLearn 默认并发配置。
  */
 export const defaultConcurrencyProfiles: ConcurrencyProfiles = {
     semaphore: {

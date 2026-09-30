@@ -5,6 +5,9 @@
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { migrateLegacyPreference } from '@/fronted/features/player/migrateLegacyPreference';
+
+migrateLegacyPreference('dash-player-subtitle-tracks', 'cuelearn-subtitle-tracks');
 
 type PlayerUiState = {
   showEn: boolean;
@@ -40,7 +43,7 @@ export const usePlayerUi = create(
       changeShowWordLevel: () => set((s) => ({ showWordLevel: !s.showWordLevel })),
     })),
     {
-      name: 'dash-player-subtitle-tracks',
+      name: 'cuelearn-subtitle-tracks',
     }
   )
 );

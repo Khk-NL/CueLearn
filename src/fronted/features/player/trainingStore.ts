@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { migrateLegacyPreference } from '@/fronted/features/player/migrateLegacyPreference';
+
+migrateLegacyPreference('dash-player-training-config', 'cuelearn-training-config');
 
 /**
  * 训练模式的数值参数：由「自定义训练参数」弹窗编辑并整体持久化。
@@ -48,7 +51,7 @@ export const useTrainingModeStore = create(
       setRewindOnResume: (v) => set({ rewindOnResume: v }),
     })),
     {
-      name: 'dash-player-training-config',
+      name: 'cuelearn-training-config',
     }
   )
 );
