@@ -25,6 +25,8 @@ import { usePlayer } from '@/fronted/features/player/playerStore';
 import useDictionaryStream, { createDictionaryRequestId } from '@/fronted/features/player/dictionaryStore';
 import { playerApi } from '@/fronted/features/player/playerApi';
 import { videoLearningApi } from '@/fronted/features/video-learning/videoLearningApi';
+import { learningApi } from '@/fronted/features/learning/learningApi';
+import useFile from '@/fronted/features/file-browser/fileStore';
 
 const logger = getRendererLogger('Word');
 
@@ -225,6 +227,11 @@ const Word = ({word, original, lemma, pop, requestPop, show, alwaysDark, classNa
                     ]);
                     setFavoriteState('idle');
                     toast.success(t('wordUnfavorited'));
+                    try {
+                        if ((await learningApi.session()).account) await learningApi.deleteWord(result.data?.word ?? cleanWord);
+                    } catch (cause) {
+                        toast.error(`本地已取消收藏，学习账号同步失败：${cause instanceof Error ? cause.message : String(cause)}`);
+                    }
                 } else {
                     setFavoriteState(previousState);
                     toast.error(result.error || t('unfavoriteWordFailed'));
@@ -237,6 +244,20 @@ const Word = ({word, original, lemma, pop, requestPop, show, alwaysDark, classNa
                 vocabularyStore.addVocabularyWords([result.data.word]);
                 setFavoriteState('saved');
                 toast.success(result.data.alreadyExists ? t('wordAlreadyFavorited') : t('wordFavorited'));
+                const session = await learningApi.session();
+                if (session.account) {
+                    const file = useFile.getState();
+                    const sentence = usePlayer.getState().currentSentence;
+                    try {
+                        await learningApi.saveWord({ word: result.data.word, meaning: result.data.translate,
+                            videoId: file.videoId ?? undefined, mediaPath: file.videoPath ?? undefined,
+                            subtitleHash: file.srtHash ?? undefined, sentenceIndex: sentence?.index,
+                            startSeconds: sentence ? sentence.adjustedStart ?? sentence.start : undefined,
+                            endSeconds: sentence ? sentence.adjustedEnd ?? sentence.end : undefined, sentence: sentence?.text });
+                    } catch (cause) {
+                        toast.error(`本地已收藏，学习账号同步失败：${cause instanceof Error ? cause.message : String(cause)}`);
+                    }
+                }
             } else {
                 setFavoriteState('idle');
                 toast.error(result.error || t('favoriteWordFailed'));

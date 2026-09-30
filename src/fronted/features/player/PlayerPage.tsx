@@ -69,8 +69,18 @@ const PlayerWithControlsPage = () => {
         useLayout((s) => s.height)
     );
     const location = useLocation();
-    const [_searchParams, setSearchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const learningSeekRef = useRef<string | null>(null);
     const referrer = location.state && location.state.referrer;
+    useEffect(() => {
+        const seconds = Number(searchParams.get('learningAt'));
+        if (!videoLoaded || !videoId || !Number.isFinite(seconds) || seconds < 0 || !searchParams.has('learningAt')) return;
+        if (useFile.getState().videoId !== videoId) return;
+        const key = `${videoId}:${seconds}`;
+        if (learningSeekRef.current === key) return;
+        learningSeekRef.current = key;
+        playerActions.seekToTarget({ time: seconds });
+    }, [videoId, videoLoaded, searchParams]);
     logger.debug('page referrer', {referrer});
     const windowButtonsVisibleRef = useRef<boolean | null>(null);
     // 播放问题提示去重：同一文件同一场景只提示一次

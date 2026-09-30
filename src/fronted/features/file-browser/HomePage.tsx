@@ -88,6 +88,7 @@ const HomePage = () => {
         { title: t('sentenceSplitter'), path: '/split', icon: Scissors },
         { title: t('playbackRepair'), path: '/repair', icon: Rotate3D },
         { title: t('vocabularyStudio'), path: '/vocabulary', icon: BookOpen },
+        { title: '语境学习', path: '/learning', icon: BookOpen },
         { title: t('settingsCenter'), path: '/settings', icon: Settings },
     ];
 
@@ -107,7 +108,7 @@ const HomePage = () => {
                     <div className="flex flex-col gap-6">
                         <div className="px-3 pt-1">
                             <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                DashPlayer
+                                CueLearn
                             </h1>
                         </div>
 

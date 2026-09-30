@@ -23,6 +23,7 @@ import RepairPage from '@/fronted/features/repair/RepairPage';
 import Eb from '@/fronted/components/shared/common/Eb';
 import FavouritePage from '@/fronted/features/favourite/FavouritePage';
 import VideoLearningPage from '@/fronted/features/video-learning/VideoLearningPage';
+import LearningDashboard from '@/fronted/features/learning/LearningDashboard';
 import { OnboardingView } from '@/fronted/features/onboarding/OnboardingView';
 import { getOnboardingCompletedVersion } from '@/fronted/features/onboarding/onboardingApi';
 import { MigrationFailureGate } from '@/fronted/features/migration-failure/MigrationFailureGate';
@@ -184,6 +185,7 @@ export const App = () => {
                                         path="vocabulary"
                                         element={<Eb key="vocabulary"><VideoLearningPage /></Eb>}
                                     />
+                                    <Route path="learning" element={<Eb key="learning"><LearningDashboard /></Eb>} />
                                     <Route path="about" element={<Navigate to="/settings/about" replace />} />
                                     <Route
                                         path="settings"

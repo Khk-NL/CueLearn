@@ -31,7 +31,9 @@ export default function registerRoute<K extends keyof ApiMap>(path: K, func: Api
         const traceId = resolveTraceId(traceCarrier?.traceId);
         return runWithTrace(traceId, async () => {
             const start = Date.now();
-            const policy = QUIET_PATH_POLICIES[path];
+            const policy = String(path).startsWith('learning/')
+                ? { logParam: false, logResult: false }
+                : QUIET_PATH_POLICIES[path];
             const requestData = policy?.logParam === false
                 ? { path: String(path) }
                 : { path: String(path), param };

@@ -11,6 +11,8 @@ import { usePlayerState } from '@/fronted/features/player/playerState';
 import { playerActions } from '@/fronted/features/player/components/PlayerActions';
 import useVocabulary from '@/fronted/features/player/vocabularyStore';
 import { videoLearningApi } from '@/fronted/features/video-learning/videoLearningApi';
+import { learningApi } from '@/fronted/features/learning/learningApi';
+import useFile from '@/fronted/features/file-browser/fileStore';
 import { getTtsUrl, playAudioUrl } from '@/fronted/infrastructure/audio/AudioPlayer';
 import { getRendererLogger } from '@/fronted/log/simple-logger';
 import TimeUtil from '@/common/utils/TimeUtil';
@@ -142,6 +144,11 @@ export default function LearningPage() {
                     word,
                 ]);
                 toast.success(t('wordUnfavorited'));
+                try {
+                    if ((await learningApi.session()).account) await learningApi.deleteWord(result.data?.word ?? baseWord ?? word);
+                } catch (cause) {
+                    toast.error(`本地已取消收藏，学习账号同步失败：${cause instanceof Error ? cause.message : String(cause)}`);
+                }
                 return;
             }
             const result = await videoLearningApi.favoriteWord(word, meaning);
@@ -151,11 +158,24 @@ export default function LearningPage() {
             }
             vocabulary.addVocabularyWords([result.data.word]);
             toast.success(result.data.alreadyExists ? t('wordAlreadyFavorited') : t('wordFavorited'));
+            const session = await learningApi.session();
+            if (session.account) {
+                const file = useFile.getState();
+                try {
+                    await learningApi.saveWord({ word: result.data.word, meaning: result.data.translate, videoId: file.videoId ?? undefined,
+                        mediaPath: file.videoPath ?? undefined, subtitleHash: file.srtHash ?? undefined,
+                        sentenceIndex: topicLine?.index,
+                        startSeconds: topicLine ? topicLine.adjustedStart ?? topicLine.start : undefined,
+                        endSeconds: topicLine ? topicLine.adjustedEnd ?? topicLine.end : undefined, sentence: topicLine?.text });
+                } catch (cause) {
+                    toast.error(`本地已收藏，学习账号同步失败：${cause instanceof Error ? cause.message : String(cause)}`);
+                }
+            }
         } catch (error) {
             logger.error('failed to toggle favorite word', { error: error instanceof Error ? error.message : error });
             toast.error(favorited ? t('unfavoriteWordFailed') : t('favoriteWordFailed'));
         }
-    }, [t, vocabulary]);
+    }, [t, vocabulary, topicLine]);
 
     const isFavorite = useCallback((word: string) => vocabulary.isVocabularyWord(word), [vocabulary]);
 
