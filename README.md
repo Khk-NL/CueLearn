@@ -30,7 +30,7 @@
 
 > 安装与使用指南详见 [Wiki](https://solidspoon.xyz/DashPlayer/home.html)，[官网](https://dash-player.solidspoon.xyz)
 
-# DashPlayer
+# CueLearn
 
 > 一款专为英语学习打造的视频播放器
 
@@ -38,7 +38,7 @@
     <img width="70%" alt="image" src="https://github.com/solidSpoon/DashPlayer/assets/39454841/80a356ab-a018-4af7-a99a-ce430b5aada7">
 </p>
 
-## 为什么需要 DashPlayer ？
+## 为什么需要 CueLearn ？
 
 简而言之，我想用英文来学习感兴趣的知识。
 
