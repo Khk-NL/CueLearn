@@ -45,6 +45,12 @@ export interface NotebookSourceInput {
     videoId: string;
 }
 
+/** 移除笔记本中的一条资料关联，历史笔记和测验仍保留。 */
+export interface NotebookSourceRemoval {
+    notebookId: string;
+    sourceId: string;
+}
+
 /** 笔记本引用的字幕位置。 */
 export interface NotebookCitation {
     mediaKey: string;

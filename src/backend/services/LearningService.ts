@@ -3,7 +3,7 @@ import path from 'node:path';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import TYPES from '@/backend/ioc/types';
-import type { LearningAccount, LearningContext, LearningContextInput, LearningNotebook, LearningStats, LearningWord, NotebookSourceInput, ReviewRating, NotebookCitation, NotebookAnswer, NotebookQuestion, LearningNote, LearningQuiz } from '@/common/contracts/learning';
+import type { LearningAccount, LearningContext, LearningContextInput, LearningNotebook, LearningStats, LearningWord, NotebookSourceInput, NotebookSourceRemoval, ReviewRating, NotebookCitation, NotebookAnswer, NotebookQuestion, LearningNote, LearningQuiz } from '@/common/contracts/learning';
 import type WordsRepository from '@/backend/services/repositories/WordsRepository';
 import type WatchHistoryRepository from '@/backend/services/repositories/WatchHistoryRepository';
 import type WatchHistoryService from '@/backend/services/WatchHistoryService';
@@ -171,6 +171,14 @@ export default class LearningService {
             media_title: video.file_name, subtitle_hash: subtitleHash });
     }
 
+    /** 从当前账号的指定笔记本移除资料；已保存的笔记和测验不随之删除。 */
+    public async removeSource(input: NotebookSourceRemoval): Promise<void> {
+        const source = (await this.pb.list<SourceRecord>('notebook_sources'))
+            .find((item) => item.id === input.sourceId && item.notebook === input.notebookId);
+        if (!source) throw new Error('笔记本资料不存在');
+        await this.pb.delete('notebook_sources', source.id);
+    }
+
     /** 列出账号笔记本及资料可用状态。 */
     public async notebooks(): Promise<LearningNotebook[]> {
         const [books, sources] = await Promise.all([this.pb.list<NotebookRecord>('notebooks'), this.pb.list<SourceRecord>('notebook_sources')]);
@@ -181,11 +189,17 @@ export default class LearningService {
             }))) })));
     }
 
-    /** 根据当前机器上的映射返回播放路径与起点。 */
+    /** 根据当前机器上的映射返回播放路径；已保存出处在资料移除后仍可核对。 */
     public async playback(mediaKey: string, startSeconds: number): Promise<{ videoId: string; startSeconds: number }> {
         if (!Number.isFinite(startSeconds) || startSeconds < 0) throw new Error('播放时间无效');
-        const [contexts, sources] = await Promise.all([this.pb.list<ContextRecord>('word_contexts'), this.pb.list<SourceRecord>('notebook_sources')]);
-        if (![...contexts, ...sources].some((item) => item.media_key === mediaKey)) throw new Error('当前账号无权访问该视频出处');
+        const [contexts, sources, notes, quizzes] = await Promise.all([
+            this.pb.list<ContextRecord>('word_contexts'), this.pb.list<SourceRecord>('notebook_sources'),
+            this.pb.list<NoteRecord>('notes'), this.pb.list<QuizRecord>('quiz_attempts'),
+        ]);
+        const accessible = [...contexts, ...sources].some((item) => item.media_key === mediaKey)
+            || notes.some((note) => note.citations?.some((citation) => citation.mediaKey === mediaKey))
+            || quizzes.some((quiz) => quiz.questions.some((question) => question.citation.mediaKey === mediaKey));
+        if (!accessible) throw new Error('当前账号无权访问该视频出处');
         const binding = await this.media.resolve(mediaKey);
         if (!binding) throw new Error('本机找不到该视频，请重新关联文件');
         if (await this.media.fingerprint(binding.mediaPath) !== mediaKey) throw new Error('本机视频内容已变化，请重新关联');

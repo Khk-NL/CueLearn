@@ -1,5 +1,5 @@
 import { backendClient } from '@/fronted/infrastructure/electron/backendClient';
-import type { LearningContextInput, NotebookSourceInput, ReviewRating } from '@/common/contracts/learning';
+import type { LearningContextInput, NotebookSourceInput, NotebookSourceRemoval, ReviewRating } from '@/common/contracts/learning';
 
 /** 课程学习页只通过受限的业务 IPC 访问账号与学习数据。 */
 export const learningApi = {
@@ -17,6 +17,7 @@ export const learningApi = {
     notebooks: () => backendClient.call('learning/notebooks'),
     createNotebook: (title: string) => backendClient.call('learning/notebook/create', { title }),
     addSource: (input: NotebookSourceInput) => backendClient.call('learning/notebook/add-source', input),
+    removeSource: (input: NotebookSourceRemoval) => backendClient.call('learning/notebook/remove-source', input),
     answer: (notebookId: string, question: string) => backendClient.call('learning/notebook/answer', { notebookId, question }),
     summary: (notebookId: string) => backendClient.call('learning/notebook/summary', { notebookId }),
     createQuiz: (notebookId: string) => backendClient.call('learning/notebook/quiz/create', { notebookId }),

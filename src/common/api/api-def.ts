@@ -62,7 +62,7 @@ import { ModelInstallationStatusVO } from '@/common/types/vo/model-installation-
 import { VideoInfo } from '@/common/types/video-info';
 import { StorageStatusVO } from '@/common/types/vo/StorageStatusVO';
 import { TranscriptTask } from '@/common/contracts/transcript/transcript-task';
-import type { LearningAccount, LearningContextInput, LearningNotebook, LearningStats, LearningWord, NotebookSourceInput, ReviewRating, NotebookAnswer, LearningQuiz, LearningNote } from '@/common/contracts/learning';
+import type { LearningAccount, LearningContextInput, LearningNotebook, LearningStats, LearningWord, NotebookSourceInput, NotebookSourceRemoval, ReviewRating, NotebookAnswer, LearningQuiz, LearningNote } from '@/common/contracts/learning';
 
 /** 跨进程请求与返回值契约。 */
 interface ApiDefinition {
@@ -467,6 +467,7 @@ interface LearningDef {
     'learning/notebooks': { params: void; return: LearningNotebook[] };
     'learning/notebook/create': { params: { title: string }; return: string };
     'learning/notebook/add-source': { params: NotebookSourceInput; return: void };
+    'learning/notebook/remove-source': { params: NotebookSourceRemoval; return: void };
     'learning/playback': { params: { mediaKey: string; startSeconds: number }; return: { videoId: string; startSeconds: number } };
     'learning/notebook/answer': { params: { notebookId: string; question: string }; return: NotebookAnswer };
     'learning/notebook/summary': { params: { notebookId: string }; return: NotebookAnswer };

@@ -26,6 +26,7 @@ export default class LearningController implements Controller {
         registerRoute('learning/notebooks', () => this.learning.notebooks());
         registerRoute('learning/notebook/create', ({ title }) => this.learning.createNotebook(title));
         registerRoute('learning/notebook/add-source', (input) => this.learning.addSource(input));
+        registerRoute('learning/notebook/remove-source', (input) => this.learning.removeSource(input));
         registerRoute('learning/playback', ({ mediaKey, startSeconds }) => this.learning.playback(mediaKey, startSeconds));
         registerRoute('learning/notebook/answer', ({ notebookId, question }) => this.learning.answer(notebookId, question, 'question'));
         registerRoute('learning/notebook/summary', ({ notebookId }) => this.learning.answer(notebookId, '', 'summary'));
