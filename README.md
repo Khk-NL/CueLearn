@@ -11,7 +11,7 @@ CueLearn 是视频语境学习桌面应用。它保留本地视频播放、字�
 
 播放器中的视频和字幕文件不会上传到 PocketBase。问答和测验调用应用已有的 AI 服务设置；在「设置 → 服务与资源」填写自己的接口地址、模型和密钥。远程 PocketBase 地址由用户自行设置。
 
-完整配置和演示流程见 [课程学习开发说明](docs/course-learning.md)。开源与上游同步说明见 [开源使用说明](OPEN_SOURCE_USAGE.md)。
+产品定位与复用路线见 [产品定位与开源复用路线](docs/product-positioning.md)；配置和演示流程见 [课程学习开发说明](docs/course-learning.md)。开源与上游同步说明见 [开源使用说明](OPEN_SOURCE_USAGE.md)。
 
 ## 开源
 
