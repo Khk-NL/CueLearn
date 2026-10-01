@@ -22,7 +22,7 @@ PocketBase 0.40 系列使用 `pb_migrations/202610010000_course_learning.js` 建
 
 ## 本机启动
 
-项目要求 Node.js 22 和 Yarn 1。将官方 PocketBase 0.40 系列可执行文件放到系统路径中，在仓库根目录执行：
+项目要求 Node.js 22 和 Yarn 1。将官方 PocketBase 0.40 系列可执行文件放在仓库根目录、`.local/pocketbase/` 或系统 PATH 中。Windows 可在仓库根目录运行 `start-pocketbase.cmd`，脚本会从 8090 起选择空闲端口；在应用「语境学习」页填写脚本显示的地址。也可以手动执行：
 
 ```powershell
 pocketbase serve --dir pb_data --migrationsDir pb_migrations

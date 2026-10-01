@@ -5,9 +5,9 @@ CueLearn 是视频语境学习桌面应用。它保留本地视频播放、字�
 ## 开始使用
 
 1. 安装 Node.js 22、Yarn 1 和 [PocketBase](https://pocketbase.io/docs/) 0.40 系列。
-2. 在项目根目录启动 PocketBase：`pocketbase serve --dir pb_data --migrationsDir pb_migrations`。
+2. 在项目根目录运行 `start-pocketbase.cmd`。脚本从 8090 起自动选择空闲端口，显示实际服务地址，并使用仓库的 `pb_migrations/`。
 3. 安装依赖并启动桌面应用：`yarn install --frozen-lockfile`，然后 `yarn start`。首次启动会执行上游资源下载。
-4. 打开「语境学习」，确认 PocketBase 地址为 `http://127.0.0.1:8090`，注册或登录。首次登录可选择导入本机已有生词。
+4. 打开「语境学习」，将 PocketBase 地址设为脚本显示的地址，注册或登录。首次登录可选择导入本机已有生词。
 
 播放器中的视频和字幕文件不会上传到 PocketBase。问答和测验调用应用已有的 AI 服务设置；在「设置 → 服务与资源」填写自己的接口地址、模型和密钥。远程 PocketBase 地址由用户自行设置。
 
