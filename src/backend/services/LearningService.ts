@@ -30,8 +30,10 @@ interface NoteRecord extends PbRecord { notebook: string; kind: 'manual' | 'summ
 /** PocketBase 测验记录。 */
 interface QuizRecord extends PbRecord { notebook: string; questions: NotebookQuestion[]; answers: number[] | null }
 
-/** AI 只返回现有字幕的行号，引用正文由主进程重新读取。 */
-const answerSchema = z.object({ text: z.string().min(1), insufficient: z.boolean(), citationIds: z.array(z.number().int()) });
+/** AI 按逐条论述返回现有字幕行号，正文引用由主进程重新编号。 */
+const answerSchema = z.object({ insufficient: z.boolean(), claims: z.array(z.object({
+    text: z.string().min(1), citationIds: z.array(z.number().int()).min(1).max(3),
+})).max(8) });
 /** 每道题都必须含有可核对的字幕来源。 */
 const quizSchema = z.object({ insufficient: z.boolean(), questions: z.array(z.object({ prompt: z.string().min(1), options: z.array(z.string()).length(4), correctIndex: z.number().int().min(0).max(3), explanation: z.string(), citationId: z.number().int() })).max(5) });
 
@@ -221,7 +223,7 @@ export default class LearningService {
         const material = lines.map(({ id, citation }) => `[${id}] ${citation.mediaTitle} ${citation.startSeconds.toFixed(1)}s ${citation.sentence}`).join('\n');
         if (material.length > 24000) throw new Error('字幕内容过长，请减少资料');
         const { output } = await concurrency.withRateLimit('gpt', () => generateText({ model, output: Output.object({ schema }),
-            prompt: `你是视频学习助手。只能根据下面的字幕材料完成任务。若材料不足，将 insufficient 设为 true，引用编号或题目列表留空；不得补造事实、时间点或编号。引用时仅返回材料的编号。\n任务：${task}\n字幕材料：\n${material}` }));
+            prompt: `你是视频学习助手。只能根据下面的字幕材料完成任务。若材料不足，将 insufficient 设为 true，论述或题目列表留空；不得补造事实、时间点或编号。每条论述必须通过 citationIds 提供支持它的字幕编号，text 中不要自行插入引用标记。\n任务：${task}\n字幕材料：\n${material}` }));
         return output;
     }
 
@@ -231,10 +233,23 @@ export default class LearningService {
         const lines = await this.notebookLines(notebookId);
         const generated = await this.generate(answerSchema, kind === 'summary' ? '概括学习重点，给出少量关键字幕出处' : `回答问题：${question}`, lines);
         if (generated.insufficient) throw new Error('所选字幕资料不足，无法回答这个问题');
-        if (!generated.citationIds.length) throw new Error('回答缺少字幕出处，请重试');
-        const citations = generated.citationIds.map((id) => lines.find((line) => line.id === id)?.citation);
-        if (citations.some((citation) => !citation)) throw new Error('模型返回了不存在的字幕出处，请重试');
-        const result = { text: generated.text, citations: citations as NotebookCitation[] };
+        if (!generated.claims.length) throw new Error('回答缺少字幕出处，请重试');
+        const citations: NotebookCitation[] = [];
+        const citationNumbers = new Map<number, number>();
+        const paragraphs = generated.claims.map((claim) => {
+            if (/\[\d+\]/.test(claim.text)) throw new Error('模型在正文中返回了未核对的引用标记，请重试');
+            const markers = [...new Set(claim.citationIds)].map((id) => {
+                const source = lines.find((line) => line.id === id)?.citation;
+                if (!source) throw new Error('模型返回了不存在的字幕出处，请重试');
+                if (!citationNumbers.has(id)) {
+                    citations.push(source);
+                    citationNumbers.set(id, citations.length);
+                }
+                return `[${citationNumbers.get(id)}]`;
+            });
+            return `${claim.text.trim()} ${markers.join(' ')}`;
+        });
+        const result = { text: paragraphs.join('\n\n'), citations };
         await this.pb.create('notes', { notebook: notebookId, kind, content: kind === 'question' ? `${question}\n${result.text}` : result.text, citations: result.citations });
         return result;
     }
