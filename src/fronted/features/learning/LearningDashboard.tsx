@@ -96,17 +96,21 @@ export default function LearningDashboard() {
         });
     };
 
-    /** 登录后由用户显式选择是否导入本地词表。 */
+    /** 每个服务地址和账号首次在本机登录时询问导入，本机词表始终保留。 */
     const signIn = (register: boolean) => run(async () => {
         if (register) await learningApi.register(email, password);
         const next = await learningApi.login(email, password);
         setAccount(next); setPassword('');
         await refresh(next);
+        const server = (await learningApi.session()).url;
+        const promptKey = `cuelearn:import-prompt:${server}:${next.id}`;
+        if (window.localStorage.getItem(promptKey) !== null) return;
         if (window.confirm('是否把本机已有生词导入这个学习账号？本机词表会保留。')) {
             const result = await learningApi.importLocal();
             toast.success(`已导入 ${result.imported} 个生词，跳过 ${result.existed} 个已有词`);
             await refresh(next);
         }
+        window.localStorage.setItem(promptKey, 'done');
     });
 
     const due = words.filter((word) => new Date(word.dueAt).getTime() <= now);
