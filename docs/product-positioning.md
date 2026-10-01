@@ -27,7 +27,7 @@
 | --- | --- | --- |
 | 内容基础：播放、字幕、查词、本地媒体 | 继承的播放器与本地服务 | 已复用并保留 |
 | 学习数据：账号、生词语境、复习事件、笔记本 | PocketBase 集合、主进程学习服务 | 已实现；远程服务尚待配置 |
-| 记忆训练：到期队列、评分、原句回跳 | `reviewSchedule.ts`、复习界面 | 已实现简易事件排程；尚未使用 FSRS |
+| 记忆训练：到期队列、评分、原句回跳 | `reviewSchedule.ts`、复习界面 | 已使用 `ts-fsrs` 从复习事件重建排程；卡片先回忆再揭示释义 |
 | 资料学习：选中视频字幕、摘要、问答、测验、出处 | `LearningService.ts`、学习界面 | 已实现首版；实际 AI 服务调用尚待配置验证 |
 | 语义检索、完整对话历史、跨资料索引 | 尚无对应完整实现 | 后续评估，不作为当前能力宣传 |
 
@@ -39,11 +39,11 @@
 | --- | --- | --- |
 | [DashPlayer 上游](https://github.com/solidSpoon/DashPlayer) | 播放器、字幕、本地媒体处理 | **已作为代码基座使用**。保留来源和原有版权、许可信息；课程功能集中增加，便于今后检查上游更新。 |
 | [Open Notebook](https://github.com/lfnovo/open-notebook) | 笔记本资料管理、问答与引用的成熟实现 | **候选复用来源，当前未复制其代码**。需要新能力时先定位可独立移植的模块，再评估其 Python、Next.js 等依赖与现有 Electron、PocketBase 架构的适配成本。 |
-| [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs) | TypeScript 间隔复习调度 | **优先评估直接依赖，当前未安装或使用**。若替换现有排程，先设计三档评分到 FSRS 评分的对应关系，并验证历史复习事件如何重放。 |
+| [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs) | TypeScript 间隔复习调度 | **已作为依赖接入**。现有「忘记／模糊／记得」分别对应 Again／Hard／Good；按时间顺序回放历史复习事件，不另存一份排程状态。 |
 | [Anki](https://github.com/ankitects/anki) | 卡片揭示、复习流程、学习状态 | **候选的局部实现与交互来源，当前未复制其代码**。只移植真正需要且能独立维护的部分；卡片内容仍由 CueLearn 的视频语境决定。 |
 | [OpenKoto](https://github.com/hikariming/OpenKoto) | 字幕学习、逐句播放、语境卡片 | **候选的交互与局部实现来源，当前未复制其代码**。先比较具体功能与已有播放器能力，避免引入另一套完整客户端。 |
 
-「参考」不等于「已集成」，「可复制」也不等于适合整体搬入。上表的状态应随实际代码变更更新，尤其不能在展示材料中把 FSRS 或 Open Notebook 列为已实现依赖。
+「参考」不等于「已集成」，「可复制」也不等于适合整体搬入。上表的状态应随实际代码变更更新，尤其不能在展示材料中把 Open Notebook 列为已实现依赖。
 
 复用前按目标版本阅读各仓库的许可原文：[DashPlayer](https://github.com/solidSpoon/DashPlayer/blob/main/LICENSE)、[Open Notebook](https://github.com/lfnovo/open-notebook/blob/main/LICENSE)、[ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs/blob/main/LICENSE)、[Anki](https://github.com/ankitects/anki/blob/main/LICENSE)、[OpenKoto](https://github.com/hikariming/OpenKoto/blob/main/LICENSE)。特别注意 Anki 列有不同许可的文件，OpenKoto 的许可文件还写有附加条件；不能只看仓库的许可标签就复制前端或素材。
 
@@ -52,7 +52,7 @@
 每遇到一个新需求，先在 CueLearn 现有代码和上述项目中查找可用实现，再决定是否编写新代码。优先顺序是：
 
 1. 复用本仓库已经运行的能力，例如字幕解析、播放器时间跳转和 AI 配置。
-2. 对边界清楚的独立能力，优先使用维护中的上游包，例如评估 `ts-fsrs` 作为排程依赖；保留自己的数据和界面适配层。
+2. 对边界清楚的独立能力，优先使用维护中的上游包，例如当前的 `ts-fsrs` 排程依赖；保留自己的数据和界面适配层。
 3. 上游没有适合直接安装的包时，定位最小的源文件或模块，核对其许可证、版权声明、依赖和测试，再移植并按 CueLearn 的数据模型优化。
 4. 只有在现有实现不能满足视频时间轴和本机文件边界时，才自行实现该差异部分。不要为了「代码原创」重写成熟能力，也不要为了「复制」引入整套无关服务。
 
@@ -61,7 +61,7 @@
 ## 后续开发顺序
 
 1. **先完成首版实机验收**：在 Node.js 22 和真实 Electron 环境跑通两个账号、复习、字幕跳转、笔记本以及已配置 AI 的实际回答。现有完整 lint 和测试失败项需单独处理，不能写成验收通过。
-2. **改善语境复习**：让卡片先提示原句或原声、再揭示释义；比较现有事件排程与 `ts-fsrs`。若采用 FSRS，保留复习事件为事实来源，并用可复现的迁移和回放更新到期时间。
+2. **继续改善语境复习**：已完成先回忆后揭示释义和 FSRS 事件回放；下一步验证不同历史记录的实际到期表现，再评估听句辨词、拼写等主动练习。复习事件继续作为事实来源。
 3. **改善笔记本**：优先研究 Open Notebook 中可独立复用的资料和引用实现，改善回答与出处的对应关系；当首版字幕行数限制确实妨碍使用时，再设计检索和索引。
 4. **评估扩展**：用户上传、公开视频来源和社区互动属于后续产品阶段，需另立需求、数据与运营方案，不混入期末首版的验收范围。
 

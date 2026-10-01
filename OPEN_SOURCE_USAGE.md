@@ -4,7 +4,7 @@
 
 CueLearn 基于 [solidSpoon/DashPlayer](https://github.com/solidSpoon/DashPlayer) 的代码开发。现有视频播放、字幕与本地学习基础来自上游；本仓库新增 PocketBase 账号、生词语境复习和学习笔记本等课程功能。仓库独立维护，不代表上游项目发布或支持。
 
-其他项目的复用评估与当前集成状态见[产品定位与开源复用路线](docs/product-positioning.md)。目前没有把 Open Notebook、ts-fsrs、Anki 或 OpenKoto 的代码纳入仓库；将来实际引入时，按具体版本和文件补充来源、修改与许可记录。
+其他项目的复用评估与当前集成状态见[产品定位与开源复用路线](docs/product-positioning.md)。复习排程通过 npm 依赖使用 [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs)，其许可见[上游 LICENSE](https://github.com/open-spaced-repetition/ts-fsrs/blob/main/LICENSE)。目前没有复制 Open Notebook、Anki 或 OpenKoto 的代码；将来实际引入时，按具体版本和文件补充来源、修改与许可记录。
 
 项目沿用仓库中的 [GNU AGPLv3 许可证](LICENSE)。分发修改后的程序时应保留许可证、原有版权信息及修改说明，并向接收者提供对应源代码；提供经修改的网络服务时，还需注意 AGPLv3 关于网络交互的条款。具体权利义务以 [GNU AGPLv3 原文](https://www.gnu.org/licenses/agpl-3.0.en.html)为准。
 

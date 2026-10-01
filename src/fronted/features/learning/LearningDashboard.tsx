@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import type { LearningAccount, LearningNotebook, LearningNote, LearningQuiz, LearningStats, LearningWord, NotebookCitation, ReviewRating } from '@/common/contracts/learning';
+import type { LearningAccount, LearningNotebook, LearningNote, LearningQuiz, LearningStats, LearningWord, NotebookCitation } from '@/common/contracts/learning';
 import type WatchHistoryVO from '@/common/types/WatchHistoryVO';
 import { fileBrowserApi } from '@/fronted/features/file-browser/fileBrowserApi';
 import { learningApi } from './learningApi';
+import ReviewCard from './ReviewCard';
 
 /** 将未知异常变成能在页面显示的文字。 */
 function message(error: unknown): string { return error instanceof Error ? error.message : String(error); }
@@ -32,6 +33,12 @@ export default function LearningDashboard() {
     const [quizzes, setQuizzes] = useState<LearningQuiz[]>([]);
     const [answers, setAnswers] = useState<Record<string, number[]>>({});
     const [now, setNow] = useState(() => Date.now());
+
+    /** FSRS 的短期复习可能在数分钟后到期，定时刷新页面上的到期队列。 */
+    useEffect(() => {
+        const timer = window.setInterval(() => setNow(Date.now()), 30000);
+        return () => window.clearInterval(timer);
+    }, []);
 
     /** 刷新当前账号的学习数据，退出时清空前一个账号的内容。 */
     const refresh = useCallback(async (active: LearningAccount | null) => {
@@ -114,9 +121,11 @@ export default function LearningDashboard() {
                 : <div className="space-y-2"><div className="flex gap-2"><input aria-label="邮箱" type="email" className="min-w-0 flex-1 rounded border bg-background p-2" placeholder="邮箱" value={email} onChange={(event) => setEmail(event.target.value)} /><input aria-label="密码" type="password" className="min-w-0 flex-1 rounded border bg-background p-2" placeholder="密码" value={password} onChange={(event) => setPassword(event.target.value)} /></div><div className="flex gap-2"><button className="rounded bg-primary px-3 py-2 text-primary-foreground" disabled={busy} onClick={() => void signIn(false)}>登录</button><button className="rounded border px-3 py-2" disabled={busy} onClick={() => void signIn(true)}>注册并登录</button></div></div>}
         </section>
         {account && <><nav className="flex gap-2"><button className="rounded border px-4 py-2" aria-current={tab === 'review' ? 'page' : undefined} onClick={() => setTab('review')}>生词复习</button><button className="rounded border px-4 py-2" aria-current={tab === 'notebook' ? 'page' : undefined} onClick={() => setTab('notebook')}>学习笔记本</button></nav>
-            {tab === 'review' ? <section className="space-y-4"><p>待复习 {stats?.due ?? due.length} · 今日完成 {stats?.completedToday ?? 0} · 近七日记得比例 {Math.round((stats?.recentRememberedRate ?? 0) * 100)}%</p>
+            {tab === 'review' ? <section className="space-y-4"><p>待复习 {due.length} · 今日完成 {stats?.completedToday ?? 0} · 近七日记得比例 {Math.round((stats?.recentRememberedRate ?? 0) * 100)}%</p>
                 {due.length === 0 && <p className="text-muted-foreground">目前没有到期生词。在播放器字幕中查词并收藏后即可复习。</p>}
-                {due.map((word) => <article key={word.id} className="rounded-xl border p-4 space-y-2"><h2 className="text-xl font-semibold">{word.word}</h2><p>{word.meaning || '暂无释义'}</p>{word.contexts.length === 0 ? <p className="text-sm text-muted-foreground">这是从旧词表导入的词，暂无视频语境。</p> : word.contexts.map((context) => <div key={context.id} className="rounded bg-muted p-2"><p>{context.sentence}</p><button className="text-sm underline" disabled={!context.available || busy} onClick={() => void openCitation(context)}>{context.available ? `${context.mediaTitle} · ${context.startSeconds.toFixed(1)} 秒播放` : '本机视频缺失'}</button></div>)}<div className="flex gap-2">{([['forgot', '忘记'], ['unsure', '模糊'], ['remembered', '记得']] as [ReviewRating, string][]).map(([rating, label]) => <button key={rating} className="rounded border px-3 py-2" disabled={busy} onClick={() => void run(async () => { await learningApi.review(word.id, rating); await refresh(account); })}>{label}</button>)}</div></article>)}
+                {due.map((word) => <ReviewCard key={word.id} word={word} busy={busy}
+                    onPlay={openCitation}
+                    onRate={(rating) => run(async () => { await learningApi.review(word.id, rating); await refresh(account); })} />)}
             </section> : <section className="space-y-4"><div className="flex gap-2"><input className="flex-1 rounded border bg-background p-2" aria-label="新笔记本名称" placeholder="新笔记本名称" value={title} onChange={(event) => setTitle(event.target.value)} /><button className="rounded bg-primary px-3 py-2 text-primary-foreground" disabled={busy} onClick={() => void run(async () => { const id = await learningApi.createNotebook(title); setTitle(''); await refresh(account); setSelectedBook(id); })}>创建</button></div>
                 <select aria-label="选择笔记本" className="w-full rounded border bg-background p-2" value={selectedBook} onChange={(event) => setSelectedBook(event.target.value)}><option value="">选择笔记本</option>{books.map((item) => <option value={item.id} key={item.id}>{item.title}</option>)}</select>
                 {book && <><div className="rounded-xl border p-4 space-y-2"><h2 className="font-semibold">资料视频（最多五个）</h2>{book.sources.map((source) => <p key={source.id}>{source.mediaTitle} · {source.available ? '可用' : '本机视频或字幕缺失'}</p>)}<div className="flex gap-2"><select aria-label="选择带字幕的视频" className="flex-1 rounded border bg-background p-2" value={selectedVideo} onChange={(event) => setSelectedVideo(event.target.value)}><option value="">选择已有视频</option>{history.map((video) => <option value={video.id} key={video.id}>{video.displayFileName || video.fileName}</option>)}</select><button className="rounded border px-3 py-2" disabled={busy || !selectedVideo || book.sources.length >= 5} onClick={() => void run(async () => { await learningApi.addSource({ notebookId: book.id, videoId: selectedVideo }); await refresh(account); })}>加入资料</button></div></div>
