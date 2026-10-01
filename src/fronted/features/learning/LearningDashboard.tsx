@@ -113,7 +113,8 @@ export default function LearningDashboard() {
         window.localStorage.setItem(promptKey, 'done');
     });
 
-    const due = words.filter((word) => new Date(word.dueAt).getTime() <= now);
+    const due = words.filter((word) => new Date(word.dueAt).getTime() <= now)
+        .sort((left, right) => left.dueAt.localeCompare(right.dueAt));
     const book = books.find((item) => item.id === selectedBook);
 
     return <div className="h-full overflow-y-auto p-6 text-foreground space-y-5">
@@ -128,7 +129,7 @@ export default function LearningDashboard() {
         {account && <><nav className="flex gap-2"><button className="rounded border px-4 py-2" aria-current={tab === 'review' ? 'page' : undefined} onClick={() => setTab('review')}>生词复习</button><button className="rounded border px-4 py-2" aria-current={tab === 'notebook' ? 'page' : undefined} onClick={() => setTab('notebook')}>学习笔记本</button></nav>
             {tab === 'review' ? <section className="space-y-4"><p>待复习 {due.length} · 今日完成 {stats?.completedToday ?? 0} · 近七日记得比例 {Math.round((stats?.recentRememberedRate ?? 0) * 100)}%</p>
                 {due.length === 0 && <p className="text-muted-foreground">目前没有到期生词。在播放器字幕中查词并收藏后即可复习。</p>}
-                {due.map((word) => <ReviewCard key={word.id} word={word} busy={busy}
+                {due.slice(0, 1).map((word) => <ReviewCard key={word.id} word={word} busy={busy}
                     onPlay={openCitation}
                     onRate={(rating) => run(async () => { await learningApi.review(word.id, rating); await refresh(account); })} />)}
             </section> : <section className="space-y-4"><div className="flex gap-2"><input className="flex-1 rounded border bg-background p-2" aria-label="新笔记本名称" placeholder="新笔记本名称" value={title} onChange={(event) => setTitle(event.target.value)} /><button className="rounded bg-primary px-3 py-2 text-primary-foreground" disabled={busy} onClick={() => void run(async () => { const id = await learningApi.createNotebook(title); setTitle(''); await refresh(account); setSelectedBook(id); })}>创建</button></div>
