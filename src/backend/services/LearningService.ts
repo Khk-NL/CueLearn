@@ -116,7 +116,7 @@ export default class LearningService {
         if (!input.mediaPath || !input.sentence) return;
         const mediaKey = await this.media.fingerprint(input.mediaPath);
         this.media.remember(mediaKey, { mediaPath: input.mediaPath, videoId: input.videoId });
-        const contexts = await this.pb.list<ContextRecord>('word_contexts');
+        const contexts = await this.pb.listByField<ContextRecord>('word_contexts', 'word_item', item.id);
         if (contexts.some((context) => context.word_item === item.id && context.media_key === mediaKey && context.sentence_index === input.sentenceIndex)) return;
         try {
             await this.pb.create('word_contexts', {
@@ -125,7 +125,7 @@ export default class LearningService {
                 start_seconds: input.startSeconds, end_seconds: input.endSeconds, sentence: input.sentence,
             });
         } catch (cause) {
-            const concurrent = await this.pb.list<ContextRecord>('word_contexts').catch(() => []);
+            const concurrent = await this.pb.listByField<ContextRecord>('word_contexts', 'word_item', item.id).catch(() => []);
             if (concurrent.some((context) => context.word_item === item.id && context.media_key === mediaKey && context.sentence_index === input.sentenceIndex)) return;
             throw cause;
         }
@@ -226,7 +226,7 @@ export default class LearningService {
 
     /** 为笔记本关联本地视频与字幕，仅同步不含本机路径的指纹。 */
     public async addSource(input: NotebookSourceInput): Promise<void> {
-        if (!(await this.pb.list<NotebookRecord>('notebooks')).some((book) => book.id === input.notebookId)) throw new Error('笔记本不存在');
+        if (!(await this.pb.findByField<NotebookRecord>('notebooks', 'id', input.notebookId))) throw new Error('笔记本不存在');
         const video = await this.history.findById(input.videoId);
         if (!video) throw new Error('本机视频记录不存在');
         const resolution = await this.watchHistory.playerSubtitle(input.videoId);
@@ -234,42 +234,56 @@ export default class LearningService {
         const mediaPath = path.join(video.base_path, video.file_name);
         const mediaKey = await this.media.fingerprint(mediaPath);
         const subtitleHash = await this.media.fingerprint(resolution.subtitlePath);
-        const sources = await this.pb.list<SourceRecord>('notebook_sources');
+        const sources = await this.pb.listByField<SourceRecord>('notebook_sources', 'notebook', input.notebookId);
         this.media.remember(mediaKey, { mediaPath, subtitlePath: resolution.subtitlePath, videoId: video.id });
-        if (sources.some((source) => source.notebook === input.notebookId && source.media_key === mediaKey)) return;
-        if (sources.filter((source) => source.notebook === input.notebookId).length >= MAX_NOTEBOOK_SOURCES) throw new Error(`每个笔记本最多选择${MAX_NOTEBOOK_SOURCES}个视频`);
+        if (sources.some((source) => source.media_key === mediaKey)) return;
+        if (sources.length >= MAX_NOTEBOOK_SOURCES) throw new Error(`每个笔记本最多选择${MAX_NOTEBOOK_SOURCES}个视频`);
         await this.pb.create('notebook_sources', { notebook: input.notebookId, media_key: mediaKey,
             media_title: video.file_name, subtitle_hash: subtitleHash });
     }
 
     /** 从当前账号的指定笔记本移除资料；已保存的笔记和测验不随之删除。 */
     public async removeSource(input: NotebookSourceRemoval): Promise<void> {
-        const source = (await this.pb.list<SourceRecord>('notebook_sources'))
-            .find((item) => item.id === input.sourceId && item.notebook === input.notebookId);
-        if (!source) throw new Error('笔记本资料不存在');
+        const source = await this.pb.findByField<SourceRecord>('notebook_sources', 'id', input.sourceId);
+        if (!source || source.notebook !== input.notebookId) throw new Error('笔记本资料不存在');
         await this.pb.delete('notebook_sources', source.id);
     }
 
     /** 列出账号笔记本及资料可用状态。 */
     public async notebooks(): Promise<LearningNotebook[]> {
         const [books, sources] = await Promise.all([this.pb.list<NotebookRecord>('notebooks'), this.pb.list<SourceRecord>('notebook_sources')]);
+        const sourcesByBook = new Map<string, SourceRecord[]>();
+        for (const source of sources) {
+            if (!sourcesByBook.has(source.notebook)) sourcesByBook.set(source.notebook, []);
+            sourcesByBook.get(source.notebook)!.push(source);
+        }
+        const availability = new Map<string, Promise<boolean>>();
         return Promise.all(books.map(async (book) => ({ id: book.id, title: book.title,
-            sources: await Promise.all(sources.filter((source) => source.notebook === book.id).map(async (source) => ({
+            sources: await Promise.all((sourcesByBook.get(book.id) ?? []).map(async (source) => ({
                 id: source.id, mediaKey: source.media_key, mediaTitle: source.media_title,
-                available: !!(await this.media.resolve(source.media_key, true)),
+                available: await (availability.get(source.media_key) ?? (() => {
+                    const result = this.media.resolve(source.media_key, true).then(Boolean);
+                    availability.set(source.media_key, result);
+                    return result;
+                })()),
             }))) })));
     }
 
     /** 根据当前机器上的映射返回播放路径；已保存出处在资料移除后仍可核对。 */
     public async playback(mediaKey: string, startSeconds: number): Promise<{ videoId: string; startSeconds: number }> {
         if (!Number.isFinite(startSeconds) || startSeconds < 0) throw new Error('播放时间无效');
-        const [contexts, sources, notes, quizzes] = await Promise.all([
-            this.pb.list<ContextRecord>('word_contexts'), this.pb.list<SourceRecord>('notebook_sources'),
-            this.pb.list<NoteRecord>('notes'), this.pb.list<QuizRecord>('quiz_attempts'),
+        const [context, source] = await Promise.all([
+            this.pb.findByField<ContextRecord>('word_contexts', 'media_key', mediaKey),
+            this.pb.findByField<SourceRecord>('notebook_sources', 'media_key', mediaKey),
         ]);
-        const accessible = [...contexts, ...sources].some((item) => item.media_key === mediaKey)
-            || notes.some((note) => note.citations?.some((citation) => citation.mediaKey === mediaKey))
-            || quizzes.some((quiz) => quiz.questions.some((question) => question.citation.mediaKey === mediaKey));
+        let accessible = !!context || !!source;
+        if (!accessible) {
+            const [notes, quizzes] = await Promise.all([
+                this.pb.list<NoteRecord>('notes'), this.pb.list<QuizRecord>('quiz_attempts'),
+            ]);
+            accessible = notes.some((note) => note.citations?.some((citation) => citation.mediaKey === mediaKey))
+                || quizzes.some((quiz) => quiz.questions.some((question) => question.citation.mediaKey === mediaKey));
+        }
         if (!accessible) throw new Error('当前账号无权访问该视频出处');
         const binding = await this.media.resolve(mediaKey);
         if (!binding) throw new Error('本机找不到该视频，请重新关联文件');
@@ -280,8 +294,8 @@ export default class LearningService {
 
     /** 读取选中资料的真实字幕，并对每条引用分配当前请求内的编号。 */
     private async notebookLines(notebookId: string): Promise<Array<{ id: number; citation: NotebookCitation }>> {
-        if (!(await this.pb.list<NotebookRecord>('notebooks')).some((book) => book.id === notebookId)) throw new Error('笔记本不存在');
-        const sources = (await this.pb.list<SourceRecord>('notebook_sources')).filter((source) => source.notebook === notebookId);
+        if (!(await this.pb.findByField<NotebookRecord>('notebooks', 'id', notebookId))) throw new Error('笔记本不存在');
+        const sources = await this.pb.listByField<SourceRecord>('notebook_sources', 'notebook', notebookId);
         if (!sources.length) throw new Error('请先为笔记本选择带字幕的视频');
         const lines: Array<{ id: number; citation: NotebookCitation }> = [];
         for (const source of sources) {
@@ -356,20 +370,20 @@ export default class LearningService {
     /** 保存用户手写笔记。 */
     public async addNote(notebookId: string, content: string): Promise<void> {
         if (!content.trim()) throw new Error('笔记不能为空');
-        if (!(await this.pb.list<NotebookRecord>('notebooks')).some((book) => book.id === notebookId)) throw new Error('笔记本不存在');
+        if (!(await this.pb.findByField<NotebookRecord>('notebooks', 'id', notebookId))) throw new Error('笔记本不存在');
         await this.pb.create('notes', { notebook: notebookId, kind: 'manual', content: content.trim(), citations: [] });
     }
 
     /** 返回笔记本中的笔记和问答。 */
     public async notes(notebookId: string): Promise<LearningNote[]> {
-        if (!(await this.pb.list<NotebookRecord>('notebooks')).some((book) => book.id === notebookId)) throw new Error('笔记本不存在');
-        return (await this.pb.list<NoteRecord>('notes')).filter((item) => item.notebook === notebookId)
+        if (!(await this.pb.findByField<NotebookRecord>('notebooks', 'id', notebookId))) throw new Error('笔记本不存在');
+        return (await this.pb.listByField<NoteRecord>('notes', 'notebook', notebookId))
             .map((item) => ({ id: item.id, kind: item.kind, content: item.content, citations: item.citations ?? [] }));
     }
 
     /** 保存一组测验答案，题目正确项仍以已持久化题目为准。 */
     public async submitQuiz(quizId: string, answers: number[]): Promise<void> {
-        const quiz = (await this.pb.list<QuizRecord>('quiz_attempts')).find((item) => item.id === quizId);
+        const quiz = await this.pb.findByField<QuizRecord>('quiz_attempts', 'id', quizId);
         if (!quiz) throw new Error('测验不存在');
         if (quiz.answers?.length) throw new Error('该测验已经提交');
         if (answers.length !== quiz.questions.length || answers.some((answer) => !Number.isInteger(answer) || answer < 0 || answer > 3)) throw new Error('请完成全部题目');
@@ -378,8 +392,8 @@ export default class LearningService {
 
     /** 返回已生成的题目和历史作答。 */
     public async quizzes(notebookId: string): Promise<LearningQuiz[]> {
-        if (!(await this.pb.list<NotebookRecord>('notebooks')).some((book) => book.id === notebookId)) throw new Error('笔记本不存在');
-        return (await this.pb.list<QuizRecord>('quiz_attempts')).filter((item) => item.notebook === notebookId)
+        if (!(await this.pb.findByField<NotebookRecord>('notebooks', 'id', notebookId))) throw new Error('笔记本不存在');
+        return (await this.pb.listByField<QuizRecord>('quiz_attempts', 'notebook', notebookId))
             .map((item) => ({ id: item.id, questions: item.questions, answers: item.answers ?? null }));
     }
 }

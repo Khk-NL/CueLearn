@@ -53,10 +53,22 @@ export default class PocketBaseClient {
     /** 查询当前账号的全部集合记录；服务端规则再次限制归属。 */
     public async list<T extends PbRecord>(collection: string): Promise<T[]> {
         const owner = this.requireAccount().id;
+        return this.listWithFilter<T>(collection, `owner = "${owner}"`);
+    }
+
+    /** 按单个字段分页读取当前账号记录。 */
+    public async listByField<T extends PbRecord>(collection: string, field: string, value: string): Promise<T[]> {
+        if (!/^[a-z_]+$/.test(field)) throw new Error('查询字段无效');
+        const owner = this.requireAccount().id;
+        return this.listWithFilter<T>(collection, `owner = "${owner}" && ${field} = ${JSON.stringify(value)}`);
+    }
+
+    /** 按过滤条件读取所有分页。 */
+    private async listWithFilter<T extends PbRecord>(collection: string, filter: string): Promise<T[]> {
         const result: T[] = [];
         let page = 1;
         for (;;) {
-            const query = new URLSearchParams({ page: String(page), perPage: '500', filter: `owner = "${owner}"` });
+            const query = new URLSearchParams({ page: String(page), perPage: '500', filter });
             const data = await this.request<PbList<T>>(`/api/collections/${collection}/records?${query}`, 'GET');
             result.push(...data.items);
             if (page >= data.totalPages) return result;
