@@ -15,13 +15,18 @@ const QUIET_PATH_POLICIES: Partial<Record<string, { logParam: boolean; logResult
     'watch-history/progress/update': { logParam: false, logResult: false },
 };
 
+/** 学习接口包含账号及用户内容，统一只记录路径与耗时。 */
+function resolveLogPolicy(path: string): { logParam: boolean; logResult: boolean } | undefined {
+    return path.startsWith('learning/') ? { logParam: false, logResult: false } : QUIET_PATH_POLICIES[path];
+}
+
 /**
  * 注册 IPC 路由并统一记录调用日志。
  *
  * 行为说明：
  * - renderer 提供合法 trace ID 时沿用，否则在 main 边界生成；
  * - 普通路径在 info 级记录 param/result，统一日志出口负责脱敏与裁剪；
- * - 命中 QUIET_PATH_POLICIES 的高频/敏感路径降为 debug，并按策略跳过 param/result，避免噪音与密钥落盘；
+ * - 命中高频路径或 learning/ 敏感路径时降为 debug，并按策略跳过 param/result，避免噪音与密钥落盘；
  * - 异常统一记 error，并转发给渲染端事件总线。
  * @param path API 路径。
  * @param func 与路径匹配的处理函数。
@@ -31,7 +36,7 @@ export default function registerRoute<K extends keyof ApiMap>(path: K, func: Api
         const traceId = resolveTraceId(traceCarrier?.traceId);
         return runWithTrace(traceId, async () => {
             const start = Date.now();
-            const policy = QUIET_PATH_POLICIES[path];
+            const policy = resolveLogPolicy(String(path));
             const requestData = policy?.logParam === false
                 ? { path: String(path) }
                 : { path: String(path), param };

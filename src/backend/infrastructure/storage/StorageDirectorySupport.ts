@@ -1,13 +1,16 @@
 import path from 'path';
 import fs from 'fs/promises';
+import fsSync from 'node:fs';
 import { app } from 'electron';
+import { getMainLogger } from '@/backend/infrastructure/logger';
 import { getEnvironmentSuffix } from '@/backend/utils/runtimeEnv';
 import StrUtil from '@/common/utils/str-util';
 import { StorageStatusVO } from '@/common/types/vo/StorageStatusVO';
 import { StorageDirectoryTarget } from '@/backend/services/gateways/storage/StorageDirectoryProvider';
 
-const DEFAULT_STORAGE_FOLDER_NAME = 'DashPlayer';
+const DEFAULT_STORAGE_FOLDER_NAME = 'CueLearn';
 const DEFAULT_COLLECTION = 'default';
+const logger = getMainLogger('storage');
 
 /**
  * 路径访问检查类型。
@@ -61,7 +64,16 @@ export interface StorageAccessStatus {
 export function resolveStorageRootPath(configuredPath?: string | null): string {
     let rawPath = configuredPath;
     if (StrUtil.isBlank(rawPath)) {
-        rawPath = path.join(app.getPath('documents'), DEFAULT_STORAGE_FOLDER_NAME);
+        const documents = app.getPath('documents');
+        const suffix = getEnvironmentSuffix();
+        const currentPath = path.join(documents, `${DEFAULT_STORAGE_FOLDER_NAME}${suffix}`);
+        const legacyPath = path.join(documents, `DashPlayer${suffix}`);
+        if (!fsSync.existsSync(currentPath) && fsSync.existsSync(legacyPath)) {
+            logger.warn('using legacy external storage directory', { directory: path.basename(legacyPath) });
+            rawPath = legacyPath;
+        } else {
+            rawPath = currentPath;
+        }
     }
 
     const dirName = path.basename(rawPath);

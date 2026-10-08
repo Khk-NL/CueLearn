@@ -65,7 +65,7 @@ describe('应用启动门槛', () => {
 
         render(<App />);
 
-        expect(await screen.findByText('DashPlayer')).toBeDefined();
+        expect(await screen.findByText('CueLearn')).toBeDefined();
         expect(screen.queryByText('steps.storage.heroTitle')).toBeNull();
     });
 

@@ -36,7 +36,7 @@ permissions:
   contents: write
 jobs:
   # whisper.cpp 核显运行时先行构建，作为本次运行的临时产物（artifact）交给 app 构建，
-  # 由 download.mjs 从 DASHPLAYER_WHISPER_RUNTIME_DIR 就地安装。运行时不上传 Release：
+  # 由 download.mjs 从 CUELEARN_WHISPER_RUNTIME_DIR 就地安装。运行时不上传 Release：
   # 发版资产只放安装包，开发机需要运行时就走 download.mjs 的本地源码编译。
   # 矩阵 fail-fast: false：单个目标失败不阻塞其余目标，也不阻塞其他平台的 app 构建；
   # 但缺了自家平台运行时的平台会构建失败（download.mjs 在 CI 下不编译兜底、不静默跳过），
@@ -176,7 +176,7 @@ jobs:
           retention-days: 7
   build:
     # needs 只为保证运行内产物先产出再被下载（download.mjs 从
-    # DASHPLAYER_WHISPER_RUNTIME_DIR 就地安装，运行时不经过 Release）；
+    # CUELEARN_WHISPER_RUNTIME_DIR 就地安装，运行时不经过 Release）；
     # 配合 !cancelled() 让运行时任务失败时其余平台照常构建（缺自家平台运行时的那一平台
     # 会在安装步骤显式失败）；runtime_only 给手动干跑用，理由同上
     needs: whisper-cpp-runtime
@@ -236,7 +236,7 @@ jobs:
           # 主进程 bundle 已大过 V8 默认 ~2GB 堆上限，构建时 OOM（v6.7.0 arm64 dmg 缺失的直接原因）
           NODE_OPTIONS: --max-old-space-size=4096
           # 运行时由本次运行的产物提供，download.mjs 直接就地安装
-          DASHPLAYER_WHISPER_RUNTIME_DIR: ${{ github.workspace }}/.ci-runtime
+          CUELEARN_WHISPER_RUNTIME_DIR: ${{ github.workspace }}/.ci-runtime
         # package_only：只跑 make 验证打包，不做 GitHub 发布
         run: npm run ${{ inputs.package_only && 'make' || 'publish' }}
       - name: Publish app with Visual Studio (Windows only)
@@ -245,5 +245,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_OPTIONS: --max-old-space-size=4096
-          DASHPLAYER_WHISPER_RUNTIME_DIR: ${{ github.workspace }}\.ci-runtime
+          CUELEARN_WHISPER_RUNTIME_DIR: ${{ github.workspace }}\.ci-runtime
         run: call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64 && npm run ${{ inputs.package_only && 'make' || 'publish' }}

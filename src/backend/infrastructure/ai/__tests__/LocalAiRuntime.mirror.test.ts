@@ -13,7 +13,7 @@ import type { LocalAiModelDefinition } from '@/common/contracts/local-ai';
 // LocalAiRuntime 的 import 链经 runtimeEnv 依赖 electron（读取 isPackaged），
 // vitest 下必须 mock，与其他基础设施测试约定一致。
 vi.mock('electron', () => ({
-    app: { isPackaged: false, getVersion: () => 'test', getPath: () => '/tmp/dashplayer-local-ai-mirror-test-userdata' },
+    app: { isPackaged: false, getVersion: () => 'test', getPath: () => '/tmp/cuelearn-local-ai-mirror-test-userdata' },
     shell: { openPath: vi.fn() },
 }));
 
@@ -112,7 +112,7 @@ describe('本地模型下载的镜像回退', () => {
     let runtime: ExposedLocalAiRuntime;
 
     beforeEach(() => {
-        tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dashplayer-local-ai-'));
+        tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cuelearn-local-ai-'));
         runtime = new ExposedLocalAiRuntime(
             new FixedStorageDirectoryProvider(tmpRoot),
             new NoopRendererGateway(),

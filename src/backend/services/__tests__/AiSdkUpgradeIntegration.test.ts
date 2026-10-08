@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeAll } from 'vitest';
 vi.mock('electron', () => ({
     app: {
         isPackaged: false,
-        getPath: () => '/tmp/dashplayer-ai-sdk-test-userdata',
+        getPath: () => '/tmp/cuelearn-ai-sdk-test-userdata',
         getVersion: () => '6.1.0',
     },
     ipcMain: undefined,

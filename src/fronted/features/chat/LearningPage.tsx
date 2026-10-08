@@ -11,6 +11,8 @@ import { usePlayerState } from '@/fronted/features/player/playerState';
 import { playerActions } from '@/fronted/features/player/components/PlayerActions';
 import useVocabulary from '@/fronted/features/player/vocabularyStore';
 import { videoLearningApi } from '@/fronted/features/video-learning/videoLearningApi';
+import { learningApi } from '@/fronted/features/learning/learningApi';
+import useFile from '@/fronted/features/file-browser/fileStore';
 import { getTtsUrl, playAudioUrl } from '@/fronted/infrastructure/audio/AudioPlayer';
 import { getRendererLogger } from '@/fronted/log/simple-logger';
 import TimeUtil from '@/common/utils/TimeUtil';
@@ -31,6 +33,7 @@ const logger = getRendererLogger('LearningPage');
  */
 export default function LearningPage() {
     const { t } = useTranslation('common');
+    const { t: tLearning } = useTranslation('learning');
     const topicText = useChatPanel((state) => state.topicText);
     const topicTranslation = useChatPanel((state) => state.topicTranslation);
     const anchorIndex = useChatPanel((state) => state.anchorIndex);
@@ -77,7 +80,6 @@ export default function LearningPage() {
     useEffect(() => {
         const text = topicText.trim();
         if (!text) {
-            setSentenceVocabulary(null);
             return;
         }
         let cancelled = false;
@@ -102,11 +104,11 @@ export default function LearningPage() {
         };
     }, [t, topicText]);
 
-    const vocabWords = useMemo(() => sentenceVocabulary?.picks ?? [], [sentenceVocabulary]);
+    const vocabWords = useMemo(() => topicText.trim() ? sentenceVocabulary?.picks ?? [] : [], [sentenceVocabulary, topicText]);
 
     const resolveWordDetail = useCallback(
-        (word: string): SentenceWordEntry | null => sentenceVocabulary?.details[word] ?? null,
-        [sentenceVocabulary]
+        (word: string): SentenceWordEntry | null => topicText.trim() ? sentenceVocabulary?.details[word] ?? null : null,
+        [sentenceVocabulary, topicText]
     );
 
     const speak = useCallback((text: string) => {
@@ -142,6 +144,11 @@ export default function LearningPage() {
                     word,
                 ]);
                 toast.success(t('wordUnfavorited'));
+                try {
+                    if ((await learningApi.session()).account) await learningApi.deleteWord(result.data?.word ?? baseWord ?? word);
+                } catch (cause) {
+                    toast.error(tLearning('syncUnfavoriteFailed', { error: cause instanceof Error ? cause.message : String(cause) }));
+                }
                 return;
             }
             const result = await videoLearningApi.favoriteWord(word, meaning);
@@ -151,11 +158,24 @@ export default function LearningPage() {
             }
             vocabulary.addVocabularyWords([result.data.word]);
             toast.success(result.data.alreadyExists ? t('wordAlreadyFavorited') : t('wordFavorited'));
+            try {
+                const session = await learningApi.session();
+                if (session.account) {
+                const file = useFile.getState();
+                    await learningApi.saveWord({ word: result.data.word, meaning: result.data.translate, videoId: file.videoId ?? undefined,
+                        mediaPath: file.videoPath ?? undefined, subtitleHash: file.srtHash ?? undefined,
+                        sentenceIndex: topicLine?.index,
+                        startSeconds: topicLine ? topicLine.adjustedStart ?? topicLine.start : undefined,
+                        endSeconds: topicLine ? topicLine.adjustedEnd ?? topicLine.end : undefined, sentence: topicLine?.text });
+                }
+            } catch (cause) {
+                toast.error(tLearning('syncFavoriteFailed', { error: cause instanceof Error ? cause.message : String(cause) }));
+            }
         } catch (error) {
             logger.error('failed to toggle favorite word', { error: error instanceof Error ? error.message : error });
             toast.error(favorited ? t('unfavoriteWordFailed') : t('favoriteWordFailed'));
         }
-    }, [t, vocabulary]);
+    }, [t, tLearning, vocabulary, topicLine]);
 
     const isFavorite = useCallback((word: string) => vocabulary.isVocabularyWord(word), [vocabulary]);
 

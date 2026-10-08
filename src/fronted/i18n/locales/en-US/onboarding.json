@@ -60,7 +60,7 @@
             "title": "How to Open Videos & Subtitles",
             "desc": "Master the two most convenient ways to import media and start learning:",
             "method1Title": "Method 1: Open a media folder (recommended)",
-            "method1Desc": "Click 'Open Folder' on the home page and select a directory containing your videos and subtitles. DashPlayer links them automatically.",
+            "method1Desc": "Click 'Open Folder' on the home page and select a directory containing your videos and subtitles. CueLearn links them automatically.",
             "method1Tip": "💡 Tip: Keep video and subtitle files in the same folder with matching names, e.g. movie.mp4 and movie.srt.",
             "method2Title": "Method 2: Multi-select video and subtitle files",
             "method2Desc": "Click 'Open File', then in the system file picker hold Ctrl / Command to select both the video file (.mp4/.mkv, etc.) and the subtitle file (.srt/.vtt, etc.).",

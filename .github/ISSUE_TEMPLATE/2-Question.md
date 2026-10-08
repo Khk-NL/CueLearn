@@ -8,4 +8,4 @@ labels: ['question']
 
 <!-- 想了解什么？ -->
 
-<!-- 使用问题也可以先查阅文档：https://solidspoon.xyz/DashPlayer/ -->
+<!-- 使用问题也可以先查阅本仓库的 docs/course-learning.md -->

@@ -9,7 +9,7 @@ import { isDevelopmentMode } from '@/backend/utils/runtimeEnv';
 const UPDATE_CACHE_TTL_MS = 5 * 60 * 1000;
 /** 限流失败缓存时长：GitHub 匿名限流窗口较长，失败后延长缓存避免在窗口内反复触发。 */
 const RATE_LIMIT_FAILURE_CACHE_MS = 10 * 60 * 1000;
-const RELEASES_BASE_URL = 'https://api.github.com/repos/solidSpoon/DashPlayer/releases';
+const RELEASES_BASE_URL = 'https://api.github.com/repos/Khk-NL/CueLearn/releases';
 
 let cache: UpdateCheckResult = { status: 'ok', releases: [] };
 /** 缓存过期时间（绝对时间戳）：到期前直接返回缓存，避免重复请求。 */

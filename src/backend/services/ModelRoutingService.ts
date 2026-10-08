@@ -22,7 +22,7 @@ export class ModelRoutingServiceImpl implements ModelRoutingService {
      * @returns 该场景保存模型标识的设置键。
      */
     private resolveFeatureKey(scene: AiModelScene): string {
-        if (scene === 'sentenceLearning') {
+        if (scene === 'sentenceLearning' || scene === 'notebook') {
             return 'models.openai.sentenceLearning';
         }
         if (scene === 'subtitleTranslation') {

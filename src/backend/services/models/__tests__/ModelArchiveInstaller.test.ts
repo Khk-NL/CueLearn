@@ -170,7 +170,7 @@ describe('模型归档安装器', () => {
 
         beforeEach(() => {
             // 下载链路直接用 Node 流写盘，必须用真实文件系统与网关保持同一视图
-            tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dashplayer-model-installer-'));
+            tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cuelearn-model-installer-'));
         });
 
         afterEach(() => {

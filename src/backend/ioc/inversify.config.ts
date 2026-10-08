@@ -88,6 +88,10 @@ import LocalTtsService, { LocalTtsServiceImpl } from '@/backend/services/LocalTt
 import { SherpaTtsModelController } from '@/backend/controllers/SherpaTtsModelController';
 import { WordMatchService, WordMatchServiceImpl } from '@/backend/services/WordMatchService';
 import VocabularyController from '@/backend/controllers/VocabularyController';
+import LearningController from '@/backend/controllers/LearningController';
+import LearningService from '@/backend/services/LearningService';
+import PocketBaseClient from '@/backend/infrastructure/learning/PocketBaseClient';
+import LocalLearningMedia from '@/backend/infrastructure/learning/LocalLearningMedia';
 import VocabularyService, { VocabularyServiceImpl } from '@/backend/services/VocabularyService';
 import SentenceVocabularyService, { SentenceVocabularyServiceImpl } from '@/backend/services/SentenceVocabularyService';
 import RendererGateway from '@/backend/services/gateways/renderer/RendererGateway';
@@ -184,6 +188,7 @@ container.bind<LocalMtService>(TYPES.LocalMtService).to(LocalMtRuntime).inSingle
 container.bind<ResourceFallbackService>(TYPES.ResourceFallbackService).to(ResourceFallbackServiceImpl).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(SherpaTtsModelController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(VocabularyController).inSingletonScope();
+container.bind<Controller>(TYPES.Controller).to(LearningController).inSingletonScope();
 container.bind<Controller>(TYPES.Controller).to(VideoLearningApiController).inSingletonScope();
 // 恢复路由控制器：不绑定到 TYPES.Controller（恢复模式下不解析业务控制器），单独绑定。
 container.bind<MigrationFailureController>(TYPES.MigrationFailureController).to(MigrationFailureController).inSingletonScope();
@@ -253,5 +258,8 @@ container.bind<WatchHistoryService>(TYPES.WatchHistoryService).to(WatchHistorySe
 container.bind<TranscriptionService>(TYPES.LocalTranscriptionService).to(LocalTranscriptionServiceImpl).inSingletonScope();
 container.bind<WordMatchService>(TYPES.WordMatchService).to(WordMatchServiceImpl).inSingletonScope();
 container.bind<VocabularyService>(TYPES.VocabularyService).to(VocabularyServiceImpl).inSingletonScope();
+container.bind<PocketBaseClient>(TYPES.PocketBaseClient).to(PocketBaseClient).inSingletonScope();
+container.bind<LocalLearningMedia>(TYPES.LocalLearningMedia).to(LocalLearningMedia).inSingletonScope();
+container.bind<LearningService>(TYPES.LearningService).to(LearningService).inSingletonScope();
 container.bind<SentenceVocabularyService>(TYPES.SentenceVocabularyService).to(SentenceVocabularyServiceImpl).inSingletonScope();
 export default container;

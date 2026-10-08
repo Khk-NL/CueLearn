@@ -155,7 +155,7 @@ const assertOnnxruntimeVcRuntimePacked = async (packageResult: { platform: strin
 const config: ForgeConfig = {
     packagerConfig: {
         // `@electron-forge/plugin-vite` defaults to packaging only `/.vite/**`.
-        // DashPlayer has runtime deps (incl. native modules) that must ship with the app.
+        // CueLearn has runtime deps (incl. native modules) that must ship with the app.
         // Keep the package small by still ignoring everything else.
         ignore: (file: string) => {
             if (!file) return false;
@@ -259,22 +259,22 @@ const config: ForgeConfig = {
         },
         icon: './assets/icons/icon',
         extraResource: ['./drizzle', './lib', './scripts', './resources'],
-        // Linux 命名统一为不带横杠的 dashplayer：此处 executableName、各 Linux maker 的
+        // Linux 命名统一为不带横杠的 cuelearn：此处 executableName、各 Linux maker 的
         // name/bin 与 package.json 的 desktopName 必须一致，桌面环境才能把窗口（Wayland
-        // app_id / X11 WM_CLASS）匹配到安装包里的 dashplayer.desktop，否则 Dock 只显示通用占位图标。
-        executableName: 'dashplayer',
-        name: 'DashPlayer',
+        // app_id / X11 WM_CLASS）匹配到安装包里的 cuelearn.desktop，否则 Dock 只显示通用占位图标。
+        executableName: 'cuelearn',
+        name: 'CueLearn',
     },
     rebuildConfig: {},
     makers: [
         new MakerSquirrel({
-            name: 'DashPlayer',
+            name: 'CueLearn',
             // 安装动画只在安装耗时超过 4 秒（且非静默安装）时才弹出；窗口尺寸等于 GIF 的像素尺寸，
             // 且窗口全透明，所以素材必须是自带白色圆角卡片、圆角外全透明的图（详见 Squirrel 的 AnimatedGifWindow）。
-            // install.gif 即按此约定生成：8 帧 × 250ms，325×339，四角透明。
+            // install.gif 为 CueLearn 品牌静态画面，325×339，四角透明。
             loadingGif: './assets/icons/install.gif',
             setupIcon: './assets/icons/icon.ico',
-            iconUrl: 'https://raw.githubusercontent.com/solidSpoon/DashPlayer/master/assets/icons/icon.ico',
+            iconUrl: 'https://raw.githubusercontent.com/Khk-NL/CueLearn/main/assets/icons/icon.ico',
         }),
         // DMG 窗口尺寸由 1x 背景图的像素尺寸决定（appdmg 读 background.png 的宽高当窗口大小，
         // background@2x.png 仅用于 retina 渲染），因此下面两个图标坐标用的就是背景图那套 640x500 坐标，
@@ -291,28 +291,28 @@ const config: ForgeConfig = {
         }),
         new MakerRpm({
             options: {
-                name: 'dashplayer',
-                bin: 'dashplayer',
-                productName: 'DashPlayer',
+                name: 'cuelearn',
+                bin: 'cuelearn',
+                productName: 'CueLearn',
                 icon: './assets/icons/icon.png',
             },
         }),
         new MakerDeb({
             options: {
-                name: 'dashplayer',
-                bin: 'dashplayer',
-                productName: 'DashPlayer',
+                name: 'cuelearn',
+                bin: 'cuelearn',
+                productName: 'CueLearn',
                 icon: './assets/icons/icon.png',
             },
         }),
-        // AppImage：单文件免安装格式，产物命名 DashPlayer-<version>-<arch>.AppImage。
+        // AppImage：单文件免安装格式，产物命名 CueLearn-<version>-<arch>.AppImage。
         // bin 必须与 packagerConfig.executableName 一致，maker 会按它校验打包产物内的可执行文件。
         // icon 给出 hicolor 多尺寸集合，maker 自动把最大尺寸作为 .DirIcon 默认图标。
         new MakerAppImage({
             options: {
-                name: 'dashplayer',
-                bin: 'dashplayer',
-                productName: 'DashPlayer',
+                name: 'cuelearn',
+                bin: 'cuelearn',
+                productName: 'CueLearn',
                 icon: {
                     '16x16': './assets/icons/16x16.png',
                     '24x24': './assets/icons/24x24.png',
@@ -326,12 +326,12 @@ const config: ForgeConfig = {
             },
         }),
         new MakerWix({
-            name: 'DashPlayer',
-            description: 'A video player for English learning',
-            manufacturer: 'solidSpoon',
+            name: 'CueLearn',
+            description: 'CueLearn video context learning and study notebook',
+            manufacturer: 'CueLearn contributors',
             version: packageJson.version,
             icon: './assets/icons/icon.ico',
-            exe: 'dashplayer.exe',
+            exe: 'cuelearn.exe',
             ui: {
                 chooseDirectory: true,
             },
@@ -359,7 +359,7 @@ const config: ForgeConfig = {
         {
             name: '@electron-forge/publisher-github',
             config: {
-                repository: { owner: 'solidSpoon', name: 'DashPlayer' },
+                repository: { owner: 'Khk-NL', name: 'CueLearn' },
             },
         },
     ],
@@ -383,7 +383,7 @@ const config: ForgeConfig = {
                     if (!oldPath.toLowerCase().endsWith('.msi')) continue;
                     const dir = path.dirname(oldPath);
                     const arch = result.arch; // 'x64' | 'ia32' | 'arm64'
-                    const newPath = path.join(dir, `DashPlayer-${version}-${arch}.msi`);
+                    const newPath = path.join(dir, `CueLearn-${version}-${arch}.msi`);
                     if (oldPath !== newPath) {
                         await fs.rename(oldPath, newPath);
                         // 更新 artifacts，确保 Publisher 上传重命名后的文件

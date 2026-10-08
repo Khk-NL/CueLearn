@@ -55,7 +55,7 @@ const extractZip = async (zipPath, destDir) => {
         }
         // NOTE: `pwsh -Command <string>` consumes the remainder of the command line, so extra args are not reliably
         // available in `$args` on CI shells. Use `-File` to pass zip/dest as proper script arguments.
-        const psTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dashplayer-ps-'));
+        const psTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cuelearn-ps-'));
         const psFile = path.join(psTmpDir, 'expand-archive.ps1');
         fs.writeFileSync(
             psFile,
@@ -131,7 +131,7 @@ const findFirstFile = (dir, predicate, maxDepth = 6, depth = 0) => {
 };
 
 const downloadAndExtractBinaryFromZip = async ({url, outputPath, binaryNameCandidates}) => {
-    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dashplayer-download-'));
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cuelearn-download-'));
     const archivePath = path.join(tmpRoot, 'asset.zip');
     await download({url, dir: tmpRoot, file: 'asset.zip'});
 
@@ -156,7 +156,7 @@ const getLatestReleaseAssetUrl = async ({owner, repo, nameRegex}) => {
     const res = await withNetworkRetry(() => axios.get(apiUrl, {
         headers: {
             'Accept': 'application/vnd.github+json',
-            'User-Agent': 'DashPlayer-downloader',
+            'User-Agent': 'CueLearn-downloader',
             ...getGithubAuthHeaders(apiUrl),
         }
     }), {label: `查询 ${owner}/${repo} 最新发布`});
@@ -170,7 +170,7 @@ const getLatestReleaseAssetUrlIncludingPrerelease = async ({owner, repo, nameReg
     const res = await withNetworkRetry(() => axios.get(apiUrl, {
         headers: {
             'Accept': 'application/vnd.github+json',
-            'User-Agent': 'DashPlayer-downloader',
+            'User-Agent': 'CueLearn-downloader',
             ...getGithubAuthHeaders(apiUrl),
         }
     }), {label: `查询 ${owner}/${repo} 发布列表`});
@@ -251,7 +251,7 @@ const downloadAndExtractBinaryFromArchive = async ({
     binaryNameCandidates,
     extraCopyPatterns = [],
 }) => {
-    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dashplayer-download-'));
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cuelearn-download-'));
     const nameFromUrl = String(url).split('/').pop() || 'asset';
     const archivePath = path.join(tmpRoot, nameFromUrl);
     console.info(chalk.blue(`=> runtime archive: ${url}`));
@@ -647,7 +647,7 @@ const whisperRuntimeAssetName = (platform, arch) =>
  * @returns {Promise<void>} 下载、解压或拷贝失败时抛出。
  */
 async function installVulkanLoaderForWindows(targetDir) {
-    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dashplayer-vulkan-'));
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cuelearn-vulkan-'));
     const archiveName = 'vulkan-runtime-components.zip';
     await download({url: VULKAN_RUNTIME_COMPONENTS_URL, dir: tmpRoot, file: archiveName});
     const extractDir = path.join(tmpRoot, 'extract');
@@ -844,7 +844,7 @@ async function buildWhisperCppFromSource({ basePath, exeName }) {
 {
     // whisper.cpp 离线识别 CLI（whisper.cpp 引擎的核显加速运行时）。
     // 二进制跟着安装包一起分发，来源只有两个：
-    //   1) DASHPLAYER_WHISPER_RUNTIME_DIR 指定目录里已有归档：release.yml 的
+    //   1) CUELEARN_WHISPER_RUNTIME_DIR 指定目录里已有归档：release.yml 的
     //      whisper-cpp-runtime 任务构建出的产物在本次运行内直接传给 app 构建；
     //   2) 其余情况（开发机）：按固定 ref 本地编译源码（buildWhisperCppFromSource）。
     // 运行时不上传 Release：发版资产只放安装包。
@@ -864,7 +864,7 @@ async function buildWhisperCppFromSource({ basePath, exeName }) {
     } else {
         // CI 会把本次运行的运行时产物目录传进来（release.yml 的 whisper-cpp-runtime
         // 任务产出 artifact，再由 app 构建任务下载到该目录）
-        const localArchiveDir = process.env.DASHPLAYER_WHISPER_RUNTIME_DIR;
+        const localArchiveDir = process.env.CUELEARN_WHISPER_RUNTIME_DIR;
         const localArchivePath = localArchiveDir
             ? path.join(localArchiveDir, whisperRuntimeAssetName(platform, arch))
             : null;
@@ -898,7 +898,7 @@ async function buildWhisperCppFromSource({ basePath, exeName }) {
                 // 而 whisper.cpp 是新用户的默认识别引擎，必须让该平台构建显式失败
                 console.error(
                     chalk.red(
-                        `❌ whisper.cpp 运行时缺失：CI 应从 DASHPLAYER_WHISPER_RUNTIME_DIR 取得归档\n` +
+                        `❌ whisper.cpp 运行时缺失：CI 应从 CUELEARN_WHISPER_RUNTIME_DIR 取得归档\n` +
                         `   期望路径：${localArchivePath ?? '（变量未设置）'}\n` +
                         `   请检查 release.yml 的 whisper-cpp-runtime 任务是否成功构建了 ${platform}/${arch} 运行时。`
                     )

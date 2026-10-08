@@ -14,7 +14,7 @@ const tempDirs: string[] = [];
  * @returns 临时配置文件完整路径。
  */
 function createTempConfigPath(fileName: string): string {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dashplayer-config-tender-vitest-'));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cuelearn-config-tender-vitest-'));
     tempDirs.push(tempDir);
     return path.join(tempDir, fileName);
 }

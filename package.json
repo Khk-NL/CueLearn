@@ -1,10 +1,10 @@
 {
-  "name": "dash-player",
-  "productName": "DashPlayer",
+  "name": "cuelearn",
+  "productName": "CueLearn",
   "version": "6.12.6",
-  "description": "A video player designed for English learning",
+  "description": "Learn languages through video context",
   "main": ".vite/build/main.js",
-  "desktopName": "dashplayer.desktop",
+  "desktopName": "cuelearn.desktop",
   "scripts": {
     "download": "zx ./scripts/download.mjs",
     "build:dictionary": "node scripts/build-dictionary.mjs",
@@ -26,10 +26,7 @@
     "drizzle-kit": "cross-env ELECTRON_RUN_AS_NODE=1 electron node_modules/drizzle-kit/bin.cjs"
   },
   "keywords": [],
-  "author": {
-    "name": "solidSpoon",
-    "email": "cedarrival@outlook.com"
-  },
+  "author": "CueLearn contributors",
   "license": "AGPL-3.0",
   "engines": {
     "node": "22.x"
@@ -205,6 +202,7 @@
     "tencentcloud-sdk-nodejs": "4.0.829",
     "tokenlens": "^1.3.1",
     "ts-error": "^1.0.6",
+    "ts-fsrs": "^5.4.2",
     "unbzip2-stream": "^1.4.3",
     "undici": "6.21.2",
     "use-stick-to-bottom": "^1.1.6",

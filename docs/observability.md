@@ -1,14 +1,14 @@
 # 可观测性与日志排障手册
 
-本文档说明 DashPlayer 的日志产出位置、字段语义、检索键约定，以及"只用 grep/jq 读日志文件"时如何还原一次故障的完整因果链。
+本文档说明 CueLearn 的日志产出位置、字段语义、检索键约定，以及"只用 grep/jq 读日志文件"时如何还原一次故障的完整因果链。
 
 面向的读者是后续排查问题的 AI Agent 与维护者：项目功能主要由 AI 实现，人工把控有限，因此**任何排障都应先以日志为唯一证据源**，而不是先猜代码。
 
 ## 1. 日志位置与命名
 
 - 根目录是 Electron `userData` 下的 `logs`，开发环境自动追加 `-dev` 后缀，因此开发与已安装的生产版本互不覆盖：
-  - macOS 开发：`~/Library/Application Support/DashPlayer/logs-dev/`
-  - macOS 生产：`~/Library/Application Support/DashPlayer/logs/`
+  - macOS 开发：`~/Library/Application Support/CueLearn/logs-dev/`
+  - macOS 生产：`~/Library/Application Support/CueLearn/logs/`
 - 文件名 `main-YYYY-MM-DD.jsonl`，按**本地日期**切分；记录内部时间戳一律 UTC ISO 8601，两者不要混淆。
 - 单文件超过 **4 MiB** 即归档为 `main-YYYY-MM-DD.<seq>.jsonl`（`seq` 从 1 递增到第一个空位）。归档用序号而不是默认的固定 `.old`，因为固定名会在同日第二次轮转时**覆盖上一份证据**。
 - 落盘、轮转与预算清理都由 `simple-logger` 自己实现（同步 `appendFileSync` + 同进程内序号重命名），不依赖任何第三方日志库，因此"什么时候归档、归档会不会丢证据"完全由本项目语义决定。每次归档当场补记一条 `module: logger-rotate` 的 `log archived`（含 `archivedPath`、`bytes`）；落盘本身失败时不抛给业务，恢复成功后补记 `log write failed`（含 `error` 与累计 `failedCount`）——日志系统自身的故障也必须有证据。
@@ -18,8 +18,8 @@
 排查前先看目录状态：
 
 ```bash
-ls -lt "$HOME/Library/Application Support/DashPlayer/logs-dev" | head
-du -sh "$HOME/Library/Application Support/DashPlayer/logs-dev"
+ls -lt "$HOME/Library/Application Support/CueLearn/logs-dev" | head
+du -sh "$HOME/Library/Application Support/CueLearn/logs-dev"
 ```
 
 如果目录里出现 `main-<day>.old.jsonl`，说明该文件由旧版轮转策略产生（历史遗留）；出现 `main-<day>.<seq>.jsonl` 才是当前轮转生效的证据。
@@ -159,7 +159,7 @@ grep -E '"module":"(FfmpegGatewayImpl|ProcessWatchdog|GlobalError)"' main-*.json
 以下命令在 macOS 开发环境下执行；把 `logs-dev` 换成 `logs` 即生产。
 
 ```bash
-cd "$HOME/Library/Application Support/DashPlayer/logs-dev"
+cd "$HOME/Library/Application Support/CueLearn/logs-dev"
 LATEST=$(ls -t main-*.jsonl | head -1)
 ```
 

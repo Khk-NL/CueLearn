@@ -48,7 +48,7 @@ describe('AboutSetting', () => {
 
         renderWithFreshSWR(<AboutSetting />);
 
-        expect(screen.getByText('DashPlayer')).toBeDefined();
+        expect(screen.getByText('CueLearn')).toBeDefined();
         expect(await screen.findByText('当前已是最新版本')).toBeDefined();
         expect(screen.getByRole('button', { name: /检查更新/ })).toBeDefined();
     });
@@ -61,7 +61,7 @@ describe('AboutSetting', () => {
                 {
                     version: 'v0.16.0',
                     content: 'Added new features and bug fixes',
-                    url: 'https://github.com/solidSpoon/DashPlayer/releases/tag/v0.16.0',
+                    url: 'https://github.com/Khk-NL/CueLearn/releases/tag/v0.16.0',
                 },
             ],
         });

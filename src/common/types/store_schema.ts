@@ -54,5 +54,7 @@ export const SettingKeyObj = {
     'proxy.mode': 'system',
     'proxy.url': '',
     'proxy.bypass_rules': '',
+    'learning.pocketBaseUrl': 'http://127.0.0.1:8090',
+    'learning.mediaPaths': '{}',
 }
 export type SettingKey = keyof typeof SettingKeyObj;

@@ -263,7 +263,7 @@ const StorageSetting = () => {
                                 render={({ field }) => (
                                     <Input
                                         className="w-72 font-mono text-xs"
-                                        placeholder="Documents/DashPlayer"
+                                        placeholder="Documents/CueLearn"
                                         value={field.value ?? ''}
                                         onChange={(e) => field.onChange(e.target.value)}
                                         onBlur={field.onBlur}
