@@ -2,7 +2,7 @@
 
 CueLearn 是面向本机视频的学习桌面应用。用户可以边看视频边查词、收藏带原句和时间点的生词，再按间隔复习；也可以把带字幕的视频加入学习笔记本，生成摘要、提问和测验，并从引用跳回视频核对内容。
 
-项目由梁、郑、李、肖、严组成的课程小组开发。现有播放器、字幕和本地媒体能力基于 [DashPlayer](https://github.com/solidSpoon/DashPlayer)；CueLearn 在此基础上加入学习账号、语境复习与视频笔记本。项目以 [GNU AGPLv3](LICENSE) 发布，来源和第三方资源说明见 [开源使用说明](OPEN_SOURCE_USAGE.md)。
+项目由梁、郑、李、肖、严组成的课程小组开发。项目以 [GNU AGPLv3](LICENSE) 发布，来源和第三方资源说明见 [开源使用说明](OPEN_SOURCE_USAGE.md)。
 
 ## 已实现的功能
 
