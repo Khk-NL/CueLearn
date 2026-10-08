@@ -16,6 +16,11 @@ on:
         type: boolean
         required: false
         default: false
+      # 内测工作流复用打包链路时，将安装包交给后续预发行版任务。
+      upload_packages:
+        type: boolean
+        required: false
+        default: false
   # 供 release-please.yml 在发版 PR 合并后以 workflow_call 直接调用
   # （GITHUB_TOKEN 打的 tag 不会触发 push 事件，不能只靠下面的 tag 触发器）
   workflow_call:
@@ -27,6 +32,10 @@ on:
         default: false
       # 同上：发版链路固定不传（false），只给手动干跑用
       package_only:
+        type: boolean
+        required: false
+        default: false
+      upload_packages:
         type: boolean
         required: false
         default: false
@@ -247,3 +256,11 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
           CUELEARN_WHISPER_RUNTIME_DIR: ${{ github.workspace }}\.ci-runtime
         run: call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64 && npm run ${{ inputs.package_only && 'make' || 'publish' }}
+      - name: Upload internal beta packages
+        if: inputs.package_only && inputs.upload_packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: beta-package-${{ matrix.os.name }}
+          path: out/make/**/*
+          if-no-files-found: error
+          retention-days: 7

@@ -1,0 +1,56 @@
+name: Internal beta
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    uses: ./.github/workflows/release.yml
+    with:
+      package_only: true
+      upload_packages: true
+    permissions:
+      contents: write
+
+  publish:
+    needs: build
+    if: ${{ always() && needs.build.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: beta-package-*
+          path: beta-assets
+          merge-multiple: true
+      - name: Create prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          mapfile -d '' files < <(find beta-assets -type f -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo 'No installer artifacts were produced.' >&2
+            exit 1
+          fi
+          version=$(node -p "require('./package.json').version")
+          tag="preview-v${version}-${GITHUB_SHA::7}"
+          cat > beta-notes.md <<EOF
+          CueLearn 内测版，构建自提交 ${GITHUB_SHA}。供小组验证播放、字幕、语境生词复习与视频学习笔记本。仅已附安装包的平台可用于本轮测试。
+
+          使用学习功能需自行配置 PocketBase 0.40 系列；AI 问答需在应用中配置模型服务。安装包不含账号、密钥、视频或 PocketBase 数据。
+
+          完整测试与 lint 的现有未通过项目见 docs/course-learning.md。请将内测问题及复现步骤反馈到仓库。
+          EOF
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "${files[@]}" --clobber
+          else
+            gh release create "$tag" "${files[@]}" \
+              --target "$GITHUB_SHA" \
+              --title "CueLearn 内测版 ${version} (${GITHUB_SHA::7})" \
+              --notes-file beta-notes.md \
+              --prerelease
+          fi
