@@ -11,7 +11,11 @@ import * as tarFs from 'tar-fs';
 import unbzip2Stream from 'unbzip2-stream';
 import chalk from 'chalk';
 import { $ } from 'zx';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { withNetworkRetry } from './network-retry.mjs';
+
+const execFileAsync = promisify(execFile);
 
 const getGithubToken = () => process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
 
@@ -47,14 +51,18 @@ const mkdirp = (dir) => {
     }
 };
 
+/**
+ * 解压 ZIP 归档；Windows 直接传递参数给 PowerShell，避免 shell 字符串转义影响路径。
+ * @param {string} zipPath ZIP 文件路径。
+ * @param {string} destDir 解压目标目录。
+ * @returns {Promise<void>}
+ */
 const extractZip = async (zipPath, destDir) => {
     mkdirp(destDir);
     if (process.platform === 'win32') {
         if (!zipPath || !destDir) {
             throw new Error(`Invalid archive arguments: zipPath="${zipPath}", destDir="${destDir}"`);
         }
-        // NOTE: `pwsh -Command <string>` consumes the remainder of the command line, so extra args are not reliably
-        // available in `$args` on CI shells. Use `-File` to pass zip/dest as proper script arguments.
         const psTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cuelearn-ps-'));
         const psFile = path.join(psTmpDir, 'expand-archive.ps1');
         fs.writeFileSync(
@@ -68,14 +76,14 @@ const extractZip = async (zipPath, destDir) => {
                 '',
             ].join('\n')
         );
-        // Avoid `\e` escape sequences when zx renders arguments through a bash-like layer on Windows.
-        const psFileArg = String(psFile).replaceAll('\\', '/');
-        const zipArg = String(zipPath).replaceAll('\\', '/');
-        const destArg = String(destDir).replaceAll('\\', '/');
+        const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', psFile, zipPath, destDir];
         try {
-            await $`pwsh -NoProfile -ExecutionPolicy Bypass -File ${psFileArg} ${zipArg} ${destArg}`;
-        } catch {
-            await $`powershell -NoProfile -ExecutionPolicy Bypass -File ${psFileArg} ${zipArg} ${destArg}`;
+            try {
+                await execFileAsync('pwsh', args, { windowsHide: true });
+            } catch (error) {
+                if (error.code !== 'ENOENT') throw error;
+                await execFileAsync('powershell', args, { windowsHide: true });
+            }
         } finally {
             try {
                 fs.rmSync(psTmpDir, { recursive: true, force: true });

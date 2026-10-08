@@ -40,6 +40,7 @@ Gitee 仓库创建后，在本机执行 `git remote add gitee <实际仓库地�
 
 ## 验证记录与待验收项
 
+- 2026-10-08 内测打包准备：修正 Windows 资源下载时 ZIP 解压命令的参数传递，使用 Node 直接调用 PowerShell；`yarn run download` 已在本机完成。TypeScript 静态检查通过。完整 ESLint 仍为 5 个错误、57 个警告；完整 Vitest 仍为 366 项通过、26 项失败、22 项跳过，不能记为通过。本机 Windows 打包在重编译 `better-sqlite3` 时因缺少完整的 Windows SDK 10.0.26100.0 工具而停止；内测包计划改由仓库现有的 GitHub Actions 打包链路生成。
 - 2026-10-08：本分支审查修复后运行 `node_modules\.bin\tsc.cmd --noEmit`，通过。
 - 2026-10-08：本次改动涉及的 TypeScript 文件针对性 ESLint 检查为 0 error、9 个既有未使用变量 warning。完整 ESLint 为 5 个 error、57 个 warning；审查时的 `LearningPage.tsx` 同步 effect 更新状态错误已修正，剩余 error 均在本次未修改的既有文件，仓库完整 lint 仍不能记为通过。
 - 2026-10-08：运行完整 Vitest：50 个测试文件通过、3 个失败、2 个跳过；366 个测试通过、26 个失败、22 个跳过。失败集中在预置词典临时目录清理权限和播放修复测试，未涉及本次修改的学习模块；测试进程退出时还报告 Vite 关闭超时。完整测试目前不能记为通过。
