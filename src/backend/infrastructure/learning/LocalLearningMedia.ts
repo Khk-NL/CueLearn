@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { storeGet, storeSet } from '@/backend/infrastructure/settings/store';
 
 /** 本机文件关联，不会提交给 PocketBase。 */
@@ -28,7 +27,11 @@ export default class LocalLearningMedia {
     /** 在本机保存指纹到文件路径的关联。 */
     public remember(key: string, binding: MediaBinding): void {
         const map = this.readMap();
-        map[key] = { ...map[key], ...binding };
+        map[key] = {
+            ...map[key], mediaPath: binding.mediaPath,
+            ...(binding.subtitlePath !== undefined ? { subtitlePath: binding.subtitlePath } : {}),
+            ...(binding.videoId !== undefined ? { videoId: binding.videoId } : {}),
+        };
         storeSet('learning.mediaPaths', JSON.stringify(map));
     }
 
@@ -55,6 +58,4 @@ export default class LocalLearningMedia {
         return value;
     }
 
-    /** 返回不含路径的文件展示名称。 */
-    public title(filePath: string): string { return path.basename(filePath); }
 }

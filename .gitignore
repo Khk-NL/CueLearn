@@ -108,3 +108,5 @@ worktrees/
 
 # PocketBase 本机运行数据
 pb_data/
+/pocketbase.exe
+/outputs/

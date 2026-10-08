@@ -442,7 +442,11 @@ const PlayerWithControlsPage = () => {
         };
     }, [video, videoLoaded, subtitleSuspicions, subtitleNudge]);
     useEffect(() => {
-        setSearchParams({sideBarAnimation: 'true'});
+        setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            next.set('sideBarAnimation', 'true');
+            return next;
+        }, { replace: true });
     }, [setSearchParams]);
     const posRef = useRef<HTMLDivElement>(null);
     const [pos, setPos] = useState({x: 0, y: 0, scale: 1});

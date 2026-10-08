@@ -39,6 +39,9 @@ export interface LearningWord {
 /** 复习反馈的三个等级。 */
 export type ReviewRating = 'forgot' | 'unsure' | 'remembered';
 
+/** 单个笔记本允许关联的视频数量。 */
+export const MAX_NOTEBOOK_SOURCES = 5;
+
 /** 用户选择的视频资料。 */
 export interface NotebookSourceInput {
     notebookId: string;

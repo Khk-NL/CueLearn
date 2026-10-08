@@ -88,7 +88,7 @@ const HomePage = () => {
         { title: t('sentenceSplitter'), path: '/split', icon: Scissors },
         { title: t('playbackRepair'), path: '/repair', icon: Rotate3D },
         { title: t('vocabularyStudio'), path: '/vocabulary', icon: BookOpen },
-        { title: '语境学习', path: '/learning', icon: BookOpen },
+        { title: t('learning'), path: '/learning', icon: BookOpen },
         { title: t('settingsCenter'), path: '/settings', icon: Settings },
     ];
 

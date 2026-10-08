@@ -64,6 +64,15 @@ export default class PocketBaseClient {
         }
     }
 
+    /** 只查询当前账号中匹配指定字段的记录，避免为单条记录拉取整张表。 */
+    public async findByField<T extends PbRecord>(collection: string, field: string, value: string): Promise<T | null> {
+        if (!/^[a-z_]+$/.test(field)) throw new Error('查询字段无效');
+        const owner = this.requireAccount().id;
+        const query = new URLSearchParams({ page: '1', perPage: '1', filter: `owner = "${owner}" && ${field} = ${JSON.stringify(value)}` });
+        const data = await this.request<PbList<T>>(`/api/collections/${collection}/records?${query}`, 'GET');
+        return data.items[0] ?? null;
+    }
+
     /** 创建归属当前账号的记录。 */
     public create<T extends PbRecord>(collection: string, data: Record<string, unknown>): Promise<T> {
         return this.request<T>(`/api/collections/${collection}/records`, 'POST', { ...data, owner: this.requireAccount().id });

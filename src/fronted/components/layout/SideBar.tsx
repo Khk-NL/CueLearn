@@ -113,7 +113,7 @@ const SideBar = ({ compact }: SideBarProps) => {
                     'vocabulary',
                     <BookOpen />
                 )}
-                {item('语境学习', '/learning', 'learning', <BookOpen />)}
+                {item(t('learning'), '/learning', 'learning', <BookOpen />)}
                 {item(t('settingsCenter'), '/settings', 'settings', <Settings />)}
             </div>
         </div>

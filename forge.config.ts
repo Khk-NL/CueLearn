@@ -327,7 +327,7 @@ const config: ForgeConfig = {
         }),
         new MakerWix({
             name: 'CueLearn',
-            description: 'A video player for English learning',
+            description: 'CueLearn video context learning and study notebook',
             manufacturer: 'CueLearn contributors',
             version: packageJson.version,
             icon: './assets/icons/icon.ico',

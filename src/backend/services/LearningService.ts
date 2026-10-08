@@ -3,7 +3,7 @@ import path from 'node:path';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import TYPES from '@/backend/ioc/types';
-import type { LearningAccount, LearningContext, LearningContextInput, LearningNotebook, LearningStats, LearningWord, NotebookSourceInput, NotebookSourceRemoval, ReviewRating, NotebookCitation, NotebookAnswer, NotebookQuestion, LearningNote, LearningQuiz } from '@/common/contracts/learning';
+import { MAX_NOTEBOOK_SOURCES, type LearningAccount, type LearningContext, type LearningContextInput, type LearningNotebook, type LearningStats, type LearningWord, type NotebookSourceInput, type NotebookSourceRemoval, type ReviewRating, type NotebookCitation, type NotebookAnswer, type NotebookQuestion, type LearningNote, type LearningQuiz } from '@/common/contracts/learning';
 import type WordsRepository from '@/backend/services/repositories/WordsRepository';
 import type WatchHistoryRepository from '@/backend/services/repositories/WatchHistoryRepository';
 import type WatchHistoryService from '@/backend/services/WatchHistoryService';
@@ -69,13 +69,37 @@ export default class LearningService {
         const present = new Set(remote.map((item) => item.word.toLowerCase()));
         let imported = 0;
         let existed = 0;
-        for (const item of local) {
-            if (present.has(item.word.toLowerCase())) { existed += 1; continue; }
-            await this.pb.create('vocabulary_items', { word: item.word.toLowerCase(), meaning: item.translate ?? '' });
-            present.add(item.word.toLowerCase());
-            imported += 1;
-        }
+        const missing = local.filter((item) => {
+            const word = item.word.trim().toLowerCase();
+            if (!word || present.has(word)) { existed += 1; return false; }
+            present.add(word);
+            return true;
+        });
+        let cursor = 0;
+        /** 固定数量的工作者限制 PocketBase 同时处理的请求数。 */
+        const worker = async () => {
+            while (cursor < missing.length) {
+                const item = missing[cursor++];
+                const word = item.word.trim().toLowerCase();
+                const result = await this.getOrCreateWord(word, item.translate ?? '');
+                if (result.created) imported += 1;
+                else existed += 1;
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(4, missing.length) }, worker));
         return { imported, existed };
+    }
+
+    /** 在唯一键并发冲突后重查；其他写入失败保留原错误。 */
+    private async getOrCreateWord(word: string, meaning: string): Promise<{ record: WordRecord; created: boolean }> {
+        const existing = await this.pb.findByField<WordRecord>('vocabulary_items', 'word', word);
+        if (existing) return { record: existing, created: false };
+        try { return { record: await this.pb.create<WordRecord>('vocabulary_items', { word, meaning }), created: true }; }
+        catch (cause) {
+            const concurrent = await this.pb.findByField<WordRecord>('vocabulary_items', 'word', word).catch(() => null);
+            if (concurrent) return { record: concurrent, created: false };
+            throw cause;
+        }
     }
 
     /** 保存生词和可选的视频语境，重复词条只增加新的语境。 */
@@ -88,23 +112,28 @@ export default class LearningService {
                 input.startSeconds < 0 || input.endSeconds <= input.startSeconds ||
                 !Number.isInteger(input.sentenceIndex) || input.sentenceIndex < 0) throw new Error('字幕语境时间或序号无效');
         }
-        const existing = (await this.pb.list<WordRecord>('vocabulary_items')).find((item) => item.word === word);
-        const item = existing ?? await this.pb.create<WordRecord>('vocabulary_items', { word, meaning: input.meaning.trim() });
+        const { record: item } = await this.getOrCreateWord(word, typeof input.meaning === 'string' ? input.meaning.trim() : '');
         if (!input.mediaPath || !input.sentence) return;
         const mediaKey = await this.media.fingerprint(input.mediaPath);
         this.media.remember(mediaKey, { mediaPath: input.mediaPath, videoId: input.videoId });
         const contexts = await this.pb.list<ContextRecord>('word_contexts');
         if (contexts.some((context) => context.word_item === item.id && context.media_key === mediaKey && context.sentence_index === input.sentenceIndex)) return;
-        await this.pb.create('word_contexts', {
-            word_item: item.id, media_key: mediaKey, media_title: input.mediaTitle ?? path.basename(input.mediaPath),
-            subtitle_hash: input.subtitleHash ?? '', sentence_index: input.sentenceIndex,
-            start_seconds: input.startSeconds, end_seconds: input.endSeconds, sentence: input.sentence,
-        });
+        try {
+            await this.pb.create('word_contexts', {
+                word_item: item.id, media_key: mediaKey, media_title: input.mediaTitle ?? path.basename(input.mediaPath),
+                subtitle_hash: input.subtitleHash ?? '', sentence_index: input.sentenceIndex,
+                start_seconds: input.startSeconds, end_seconds: input.endSeconds, sentence: input.sentence,
+            });
+        } catch (cause) {
+            const concurrent = await this.pb.list<ContextRecord>('word_contexts').catch(() => []);
+            if (concurrent.some((context) => context.word_item === item.id && context.media_key === mediaKey && context.sentence_index === input.sentenceIndex)) return;
+            throw cause;
+        }
     }
 
     /** 取消收藏时删除当前账号中的对应词条及其关联语境、复习记录。 */
     public async deleteWord(word: string): Promise<void> {
-        const item = (await this.pb.list<WordRecord>('vocabulary_items')).find((entry) => entry.word === word.trim().toLowerCase());
+        const item = await this.pb.findByField<WordRecord>('vocabulary_items', 'word', word.trim().toLowerCase());
         if (item) await this.pb.delete('vocabulary_items', item.id);
     }
 
@@ -115,14 +144,29 @@ export default class LearningService {
             this.pb.list<ContextRecord>('word_contexts'),
             this.pb.list<ReviewRecord>('review_events'),
         ]);
+        const contextsByWord = new Map<string, ContextRecord[]>();
+        const reviewsByWord = new Map<string, ReviewRecord[]>();
+        for (const context of contexts) {
+            if (!contextsByWord.has(context.word_item)) contextsByWord.set(context.word_item, []);
+            contextsByWord.get(context.word_item)!.push(context);
+        }
+        for (const review of reviews) {
+            if (!reviewsByWord.has(review.word_item)) reviewsByWord.set(review.word_item, []);
+            reviewsByWord.get(review.word_item)!.push(review);
+        }
+        const availability = new Map<string, Promise<boolean>>();
         return Promise.all(words.map(async (item) => {
-            const attached = contexts.filter((context) => context.word_item === item.id);
+            const attached = contextsByWord.get(item.id) ?? [];
             const displayContexts: LearningContext[] = await Promise.all(attached.map(async (context) => ({
                 id: context.id, mediaKey: context.media_key, mediaTitle: context.media_title, sentence: context.sentence,
                 startSeconds: context.start_seconds, endSeconds: context.end_seconds,
-                available: !!(await this.media.resolve(context.media_key)),
+                available: await (availability.get(context.media_key) ?? (() => {
+                    const result = this.media.resolve(context.media_key).then(Boolean);
+                    availability.set(context.media_key, result);
+                    return result;
+                })()),
             })));
-            const history = reviews.filter((review) => review.word_item === item.id);
+            const history = reviewsByWord.get(item.id) ?? [];
             return { id: item.id, word: item.word, meaning: item.meaning, contexts: displayContexts,
                 reviews: history.length, dueAt: deriveReviewDue(history.map((event) => ({ rating: event.rating, reviewedAt: event.reviewed_at }))) };
         }));
@@ -131,17 +175,26 @@ export default class LearningService {
     /** 对自己拥有的词写入一次复习事件。 */
     public async review(wordId: string, rating: ReviewRating): Promise<void> {
         if (!['forgot', 'unsure', 'remembered'].includes(rating)) throw new Error('复习评分无效');
-        if (!(await this.pb.list<WordRecord>('vocabulary_items')).some((item) => item.id === wordId)) throw new Error('生词不存在');
+        if (!(await this.pb.findByField<WordRecord>('vocabulary_items', 'id', wordId))) throw new Error('生词不存在');
         await this.pb.create('review_events', { word_item: wordId, rating, reviewed_at: new Date().toISOString() });
     }
 
     /** 计算当前账号的到期数量、今日完成量和近期记得比例。 */
     public async stats(): Promise<LearningStats> {
-        const [words, reviews] = await Promise.all([this.words(), this.pb.list<ReviewRecord>('review_events')]);
+        const [words, reviews] = await Promise.all([
+            this.pb.list<WordRecord>('vocabulary_items'), this.pb.list<ReviewRecord>('review_events'),
+        ]);
+        const reviewsByWord = new Map<string, ReviewRecord[]>();
+        for (const review of reviews) {
+            if (!reviewsByWord.has(review.word_item)) reviewsByWord.set(review.word_item, []);
+            reviewsByWord.get(review.word_item)!.push(review);
+        }
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const recent = reviews.filter((review) => new Date(review.reviewed_at).getTime() >= Date.now() - 7 * 86400000);
-        return { due: words.filter((word) => word.dueAt <= new Date().toISOString()).length,
+        const now = new Date().toISOString();
+        return { due: words.filter((word) => deriveReviewDue((reviewsByWord.get(word.id) ?? [])
+            .map((event) => ({ rating: event.rating, reviewedAt: event.reviewed_at }))) <= now).length,
             completedToday: reviews.filter((review) => new Date(review.reviewed_at).getTime() >= today.getTime()).length,
             recentRememberedRate: recent.length ? recent.filter((review) => review.rating === 'remembered').length / recent.length : 0 };
     }
@@ -166,7 +219,7 @@ export default class LearningService {
         const sources = await this.pb.list<SourceRecord>('notebook_sources');
         this.media.remember(mediaKey, { mediaPath, subtitlePath: resolution.subtitlePath, videoId: video.id });
         if (sources.some((source) => source.notebook === input.notebookId && source.media_key === mediaKey)) return;
-        if (sources.filter((source) => source.notebook === input.notebookId).length >= 5) throw new Error('每个笔记本最多选择五个视频');
+        if (sources.filter((source) => source.notebook === input.notebookId).length >= MAX_NOTEBOOK_SOURCES) throw new Error(`每个笔记本最多选择${MAX_NOTEBOOK_SOURCES}个视频`);
         await this.pb.create('notebook_sources', { notebook: input.notebookId, media_key: mediaKey,
             media_title: video.file_name, subtitle_hash: subtitleHash });
     }
@@ -232,7 +285,7 @@ export default class LearningService {
 
     /** 向已配置的学习模型发送经过范围限制的字幕，要求只引用编号。 */
     private async generate<T>(schema: z.ZodType<T>, task: string, lines: Array<{ id: number; citation: NotebookCitation }>): Promise<T> {
-        const model = this.ai.getModel('sentenceLearning');
+        const model = this.ai.getModel('notebook');
         if (!model) throw new Error(CLOUD_AI_NOT_CONFIGURED_MESSAGE);
         const material = lines.map(({ id, citation }) => `[${id}] ${citation.mediaTitle} ${citation.startSeconds.toFixed(1)}s ${citation.sentence}`).join('\n');
         if (material.length > 24000) throw new Error('字幕内容过长，请减少资料');
