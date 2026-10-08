@@ -24,6 +24,8 @@ CueLearn 是面向本机视频的学习桌面应用。用户可以边看视频�
 
 产品定位与复用路线见 [产品定位与开源复用路线](docs/product-positioning.md)；配置、演示流程及验证状态见 [课程学习开发说明](docs/course-learning.md)。开源与上游同步说明见 [开源使用说明](OPEN_SOURCE_USAGE.md)。
 
+小组成员从 `main` 创建功能分支并通过 PR 协作，具体步骤见 [小组协作开发指南](docs/team-development.md)。
+
 ## 开发检查
 
 应用沿用 React → Electron IPC → 主进程服务的分层。常用检查命令为 `node_modules\.bin\tsc.cmd --noEmit`、`yarn lint` 和 `yarn test:run`。远程 PocketBase 与 AI 服务尚待使用者配置，不能视作已经过实机验收。
