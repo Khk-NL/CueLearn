@@ -31,7 +31,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          mapfile -d '' files < <(find beta-assets -type f -print0)
+          mapfile -d '' files < <(find beta-assets -type f \( -name '*.rpm' -o -name '*.deb' -o -name '*.AppImage' -o -name '*.dmg' -o -name '*.msi' -o -name '*.exe' -o -name '*.nupkg' -o -name 'RELEASES' \) -print0)
           if [ "${#files[@]}" -eq 0 ]; then
             echo 'No installer artifacts were produced.' >&2
             exit 1
