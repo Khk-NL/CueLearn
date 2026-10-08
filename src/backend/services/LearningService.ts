@@ -140,10 +140,23 @@ export default class LearningService {
     /** 查询全部单词、语境和按作答历史计算的到期时间。 */
     public async words(): Promise<LearningWord[]> {
         const [words, contexts, reviews] = await Promise.all([
-            this.pb.list<WordRecord>('vocabulary_items'),
-            this.pb.list<ContextRecord>('word_contexts'),
+            this.pb.list<WordRecord>('vocabulary_items'), this.pb.list<ContextRecord>('word_contexts'),
             this.pb.list<ReviewRecord>('review_events'),
         ]);
+        return this.wordsFromRecords(words, contexts, reviews);
+    }
+
+    /** 首页一次读取所需记录，同时生成词表和统计，避免重复下载复习事件。 */
+    public async overview(): Promise<{ words: LearningWord[]; stats: LearningStats }> {
+        const [words, contexts, reviews] = await Promise.all([
+            this.pb.list<WordRecord>('vocabulary_items'), this.pb.list<ContextRecord>('word_contexts'),
+            this.pb.list<ReviewRecord>('review_events'),
+        ]);
+        return { words: await this.wordsFromRecords(words, contexts, reviews), stats: this.statsFromRecords(words, reviews) };
+    }
+
+    /** 根据同一次查询结果生成卡片，按词与媒体指纹索引以避免重复扫描。 */
+    private async wordsFromRecords(words: WordRecord[], contexts: ContextRecord[], reviews: ReviewRecord[]): Promise<LearningWord[]> {
         const contextsByWord = new Map<string, ContextRecord[]>();
         const reviewsByWord = new Map<string, ReviewRecord[]>();
         for (const context of contexts) {
@@ -184,6 +197,11 @@ export default class LearningService {
         const [words, reviews] = await Promise.all([
             this.pb.list<WordRecord>('vocabulary_items'), this.pb.list<ReviewRecord>('review_events'),
         ]);
+        return this.statsFromRecords(words, reviews);
+    }
+
+    /** 仅根据词条和作答事件计算统计，不读取字幕或检查本机文件。 */
+    private statsFromRecords(words: WordRecord[], reviews: ReviewRecord[]): LearningStats {
         const reviewsByWord = new Map<string, ReviewRecord[]>();
         for (const review of reviews) {
             if (!reviewsByWord.has(review.word_item)) reviewsByWord.set(review.word_item, []);

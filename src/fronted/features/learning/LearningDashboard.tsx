@@ -46,13 +46,13 @@ export default function LearningDashboard() {
     /** 刷新当前账号的学习数据，退出时清空前一个账号的内容。 */
     const refresh = useCallback(async (active: LearningAccount | null) => {
         if (!active) { setWords([]); setStats(null); setBooks([]); setSelectedBook(''); setNotes([]); setQuizzes([]); return; }
-        const [nextWords, nextStats, nextBooks, roots] = await Promise.all([
-            learningApi.words(), learningApi.stats(), learningApi.notebooks(), fileBrowserApi.listWatchHistory(),
+        const [overview, nextBooks, roots] = await Promise.all([
+            learningApi.overview(), learningApi.notebooks(), fileBrowserApi.listWatchHistory(),
         ]);
         const folders = roots.filter((item) => item.isFolder);
         const nested = await Promise.all(folders.map((folder) => fileBrowserApi.listWatchHistoryByPath(folder.basePath)));
         const videos = [...roots, ...nested.flat()];
-        setWords(nextWords); setStats(nextStats); setBooks(nextBooks);
+        setWords(overview.words); setStats(overview.stats); setBooks(nextBooks);
         setNow(Date.now());
         setHistory(videos.filter((video) => !video.isFolder && !!video.srtFile));
         setSelectedBook((current) => nextBooks.some((book) => book.id === current) ? current : nextBooks[0]?.id ?? '');

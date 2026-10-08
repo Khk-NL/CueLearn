@@ -462,6 +462,7 @@ interface LearningDef {
     'learning/word/save': { params: LearningContextInput; return: void };
     'learning/word/delete': { params: { word: string }; return: void };
     'learning/words': { params: void; return: LearningWord[] };
+    'learning/overview': { params: void; return: { words: LearningWord[]; stats: LearningStats } };
     'learning/review': { params: { wordId: string; rating: ReviewRating }; return: void };
     'learning/stats': { params: void; return: LearningStats };
     'learning/notebooks': { params: void; return: LearningNotebook[] };

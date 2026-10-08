@@ -21,6 +21,7 @@ export default class LearningController implements Controller {
         registerRoute('learning/word/save', (input) => this.learning.saveWord(input));
         registerRoute('learning/word/delete', ({ word }) => this.learning.deleteWord(word));
         registerRoute('learning/words', () => this.learning.words());
+        registerRoute('learning/overview', () => this.learning.overview());
         registerRoute('learning/review', ({ wordId, rating }) => this.learning.review(wordId, rating));
         registerRoute('learning/stats', () => this.learning.stats());
         registerRoute('learning/notebooks', () => this.learning.notebooks());

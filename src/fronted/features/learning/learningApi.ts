@@ -21,6 +21,8 @@ export const learningApi = {
     deleteWord: (word: string) => backendClient.call('learning/word/delete', { word }),
     /** 读取单词及复习进度。 */
     words: () => backendClient.call('learning/words'),
+    /** 一次读取学习首页需要的词表与统计。 */
+    overview: () => backendClient.call('learning/overview'),
     /** 提交一次复习评分。 */
     review: (wordId: string, rating: ReviewRating) => backendClient.call('learning/review', { wordId, rating }),
     /** 读取今日和近期复习统计。 */
