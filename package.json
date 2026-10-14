@@ -1,7 +1,7 @@
 {
   "name": "cuelearn",
   "productName": "CueLearn",
-  "version": "6.12.6",
+  "version": "6.12.5",
   "description": "Learn languages through video context",
   "main": ".vite/build/main.js",
   "desktopName": "cuelearn.desktop",
