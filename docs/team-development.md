@@ -30,13 +30,17 @@ PR 说明至少写清：改了什么、为什么改、怎样验证、尚未验�
 
 ## 2. 代码位置与职责
 
+本次把原 `src/` 的全部源码迁入 `app/desktop/`，并调整桌面端构建与测试入口。已有分支应先合并最新 `main`，按新位置继续修改，避免重新建立 `src/` 或把同一模块复制成两份。课程 Python API、模型、存储及测试文件目前仅为骨架，业务接入由本周各负责人完成。
+
 | 工作 | 主要位置 | 协作提醒 |
 | --- | --- | --- |
-| 播放、字幕、时间跳转 | `src/fronted/features/player/`、`src/backend/services/WatchHistoryService.ts` | 保留原有本地播放和字幕行为，新增学习入口时检查从出处返回播放器。 |
-| 学习页面与复习卡片 | `src/fronted/features/learning/` | 用户文案同时更新 `src/fronted/i18n/locales/zh-CN/` 与 `en-US/`。 |
-| 生词、FSRS、笔记本业务 | `src/backend/services/LearningService.ts`、`src/backend/services/learning/` | 从主进程访问 PocketBase；复习作答记录是排程事实来源。 |
-| PocketBase 与本机媒体映射 | `src/backend/infrastructure/learning/`、`pb_migrations/` | 用户数据按账号隔离；视频留本机，服务端只存媒体标识和必要出处。 |
-| IPC 契约 | `src/backend/controllers/LearningController.ts`、`src/common/api/api-def.ts` | 新业务调用同时更新契约、主进程路由和前端 API。 |
+| 播放、字幕、时间跳转 | `app/desktop/fronted/features/player/`、`app/desktop/backend/services/WatchHistoryService.ts` | 保留原有本地播放和字幕行为，新增学习入口时检查从出处返回播放器。 |
+| 学习页面与复习卡片 | `app/desktop/fronted/features/learning/` | 用户文案同时更新 `app/desktop/fronted/i18n/locales/zh-CN/` 与 `en-US/`。 |
+| 生词、FSRS、笔记本业务 | `app/desktop/backend/services/LearningService.ts`、`app/desktop/backend/services/learning/` | 从主进程访问 PocketBase；复习作答记录是排程事实来源。 |
+| PocketBase 与本机媒体映射 | `app/desktop/backend/infrastructure/learning/`、`pb_migrations/` | 用户数据按账号隔离；视频留本机，服务端只存媒体标识和必要出处。 |
+| IPC 契约 | `app/desktop/backend/controllers/LearningController.ts`、`app/desktop/common/api/api-def.ts` | 新业务调用同时更新契约、主进程路由和前端 API。 |
+| 课程 API、模型与存储 | `app/main.py`、`app/models.py`、`app/storage.py` | 当前仅骨架；确认课程 Python/SQL 要求与 PocketBase 的边界后，再按统一契约实现。 |
+| 课程 API 验证 | `tests/test_api.py` | 梁主责成功、404、422 与统计验证；当前仅骨架，不能视为已通过测试。 |
 | 运行与开源说明 | `README.md`、`docs/`、`OPEN_SOURCE_USAGE.md` | 功能状态以实际代码和验证为准；保留上游及第三方版权许可信息。 |
 
 沿用 React 界面 → Electron IPC → 主进程服务 → 本地文件或 PocketBase 的分层。新增功能前先找现有播放、字幕解析、AI 配置、并发控制和翻译能力，能复用就不要再建一套。不要把 PocketBase 令牌、视频绝对路径或服务密钥传给渲染进程或提交到仓库。更详细的文件摆放规则见[架构指南](architecture-guidelines.md)。
@@ -63,13 +67,15 @@ Windows 可使用 `node_modules\.bin\tsc.cmd --noEmit`。完整 lint 和测试�
 
 ## 5. 分工与同步
 
-当前分工见[开发方案确认单](../project-docs/开发方案确认单.md)。各模块负责人可以在自己的分支独立实现，但共用的 IPC 契约、数据库集合和导航入口应尽早在 PR 说明里告知其他组员。每周同步进度时核对：正在做的分支、待评审 PR、可演示流程、阻碍与下一步负责人。
+当前分工见[开发方案确认单](../project-docs/开发方案确认单.md)。本周“业务后端改造与数据采集交付”的具体任务见[本周后端任务与分工](../project-docs/本周后端任务与分工.md)，以这次确认的五人安排为准：梁（组长）负责 `tests/test_api.py` 的成功、404、422 与统计验证，同时协调进度和评审；肖负责 `app/main.py` 与接口联调；李负责 `app/models.py`；郑负责 `app/storage.py` 与统计报表；严负责桌面端学习事件采集。上述业务工作尚待各负责人实现。
+
+各模块负责人从最新 `main` 创建自己的分支并提 PR，共用的 IPC 契约、数据库集合和导航入口应尽早在 PR 说明里告知其他组员。每周同步进度时核对：正在做的分支、待评审 PR、可演示流程、阻碍与下一步负责人。
 
 GitHub 是当前开发仓库。Gitee 地址尚未提供；创建后再记录实际远程地址和同步办法，不猜测目标。期末提交材料应与 `main` 的代码和验证记录保持一致。
 
 ## 6. 六周任务安排
 
-以开始协作的那一周为第 1 周，每周为一个阶段。现有账号、复习和笔记本代码已接入，因此表中的“完成”指核对现状、修正问题并拿出可演示、可验证的结果，不要求重写已有功能。各人从最新 `main` 创建自己的分支；需要改共用接口或集合时，先在周会上对齐字段和负责人。
+以下为前期六周总体安排；本周课程后端任务及梁的测试主责以第 5 节链接的最新分工为准。以开始协作的那一周为第 1 周，每周为一个阶段。现有账号、复习和笔记本代码已接入，因此表中的“完成”指核对现状、修正问题并拿出可演示、可验证的结果，不要求重写已有功能。各人从最新 `main` 创建自己的分支；需要改共用接口或集合时，先在周会上对齐字段和负责人。
 
 ### 第 1 周：建立共同基线
 

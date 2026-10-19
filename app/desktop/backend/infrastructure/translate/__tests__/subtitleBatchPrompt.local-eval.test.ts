@@ -22,7 +22,7 @@ import { OPENAI_SUBTITLE_DEFAULT_STYLES } from '@/common/constants/openaiSubtitl
  * LOCAL_EVAL_MODEL=/path/to/Qwen3.5-2B-Q4_K_M.gguf \
  * [LOCAL_EVAL_RUNTIME=/path/to/llama-server] \
  * [LOCAL_EVAL_TEMP=0.3] \
- * yarn test:run src/backend/infrastructure/translate/__tests__/subtitleBatchPrompt.local-eval.test.ts
+ * yarn test:run app/desktop/backend/infrastructure/translate/__tests__/subtitleBatchPrompt.local-eval.test.ts
  * ```
  *
  * 断言只覆盖结构契约（行数、有中文、非照抄、无元话/标签模仿），

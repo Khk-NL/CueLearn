@@ -10,7 +10,7 @@
 
 - 测试必须断言真实业务行为（返回值、数据库状态、DOM），禁止以 mock 调用断言为主；服务层测试一律使用内存 SQLite（`createMemoryDb()`），禁止 mock 仓储层。
 - 服务类依赖一律构造函数注入，禁止属性注入后测试强转私有字段。
-- `src/fronted/components/ui/`（shadcn 生成）等第三方代码不写测试；删除模块时同步删除对应测试，不留孤儿测试与死配置。
+- `app/desktop/fronted/components/ui/`（shadcn 生成）等第三方代码不写测试；删除模块时同步删除对应测试，不留孤儿测试与死配置。
 - 禁止用 `.skip`、删断言、放宽期望值让测试变绿；测试挂了先修根因。
 - 修改公开行为时必须同步更新对应测试；`describe` / `it` 文案统一使用中文白话，表达真实业务行为，避免过度技术术语。
 - 未明确要求编写或修改测试时，不要新增测试文件，也不要因默认流程补测试。
@@ -30,7 +30,7 @@
 - 实现新功能或重构前，先读 `docs/architecture-guidelines.md` 并遵守其文件摆放与分层规则。
 - 涉及并发控制、限流、让步调度、锁顺序或重入（如 ffmpeg/whisper 任务并发、gpt/tts 请求限流）时，先读 `docs/concurrency-kernel-usage.md` 按其约定实现。
 - 涉及日志产出、崩溃归因、`job`/`traceId`/`module` 等检索键时，先读 `docs/observability.md`：故障排查由 AI 只读 JSONL 日志完成，日志形状与检索键是契约的一部分。
-- Drizzle 迁移（`drizzle/migrations/`）是自动生成的，禁止手改；改 `src/backend/infrastructure/db/tables/` 下的 schema 后执行 `yarn drizzle-kit generate`。
+- Drizzle 迁移（`drizzle/migrations/`）是自动生成的，禁止手改；改 `app/desktop/backend/infrastructure/db/tables/` 下的 schema 后执行 `yarn drizzle-kit generate`。
 - 禁止编写 fallback 掩盖配置或数据问题（含前端默认值兜底、静默回退、隐式纠偏）；数据异常必须尽早失败并显式暴露。
 - 问题一律根因修复，不以“最小改动”为决策依据；允许为从根源解决而重构，并主动删除旧方案的遗留、兼容分支和死代码。
 - 如果发现值得新增的约定，先询问再写入本文件。

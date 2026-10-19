@@ -110,3 +110,11 @@ worktrees/
 pb_data/
 /pocketbase.exe
 /outputs/
+
+# 课程 Python 后端本机数据与缓存
+learn.db
+learn.db-wal
+learn.db-shm
+__pycache__/
+.pytest_cache/
+.venv/

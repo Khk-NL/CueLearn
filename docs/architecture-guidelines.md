@@ -6,7 +6,25 @@
 
 ## 1. 基本结构
 
-后端主要运行在 Electron main 进程中。新增代码优先遵循下面的关系：
+课程框架统一使用根目录 `app/`。本次将原 `src/` 内的全部桌面端源码迁入 `app/desktop/`，保留内部目录和职责；Python 课程入口位于 `app/main.py`、`app/models.py`、`app/storage.py`，对应测试位于 `tests/test_api.py`。目录如下：
+
+```text
+app/
+  __init__.py
+  main.py               # 课程 API 入口骨架，待实现
+  models.py             # 课程请求与响应模型骨架，待实现
+  storage.py            # 课程存储与统计骨架，待实现
+  desktop/              # 原 src/，现有 Electron、React 及共享代码
+    backend/
+    fronted/
+    common/
+tests/
+  test_api.py           # 课程 API 测试骨架，待实现
+```
+
+当前完成的是源码落位与构建路径调整。Python 文件只有职责说明，尚未提供 API、SQL、事件采集或业务接入，不能仅凭目录结构视为课程后端已完成。现有桌面端仍通过受限 IPC 调用主进程并访问 PocketBase；课程 Python/SQL 要求与 PocketBase 的集成边界须先明确，避免建立两份相互矛盾的账号、复习状态或事件数据。
+
+以下规则适用于 `app/desktop/` 中的 TypeScript 桌面端。后端主要运行在 Electron main 进程中。新增代码优先遵循下面的关系：
 
 ```text
 IPC Controller
@@ -19,7 +37,7 @@ Infrastructure
 目标目录：
 
 ```text
-src/backend/
+app/desktop/backend/
   controllers/          # IPC 请求适配
   services/             # 业务流程
     <domain>/            # 功能较多时按业务分组
@@ -48,7 +66,7 @@ src/backend/
 推荐结构：
 
 ```text
-src/fronted/
+app/desktop/fronted/
   app/                  # React 入口、路由和 renderer 启动初始化
     bootstrap/
 
@@ -312,8 +330,8 @@ SDK 类型或 Electron 类型。
 
 ## 5. 类型放置
 
-- IPC 请求和响应：`src/common/api/**`；
-- 跨进程共享的 DTO/VO：`src/common/contracts/**`；
+- IPC 请求和响应：`app/desktop/common/api/**`；
+- 跨进程共享的 DTO/VO：`app/desktop/common/contracts/**`；
 - 后端内部类型：靠近对应的 Service；
 - 数据库表、插入类型、查询行类型：只放在 `infrastructure/db/**`；
 - 纯工具类型：放在 `common/utils` 或后端自己的 `utils`。
@@ -323,7 +341,7 @@ SDK 类型或 Electron 类型。
 
 ## 6. IPC 约定
 
-- IPC 路径统一在 `src/common/api/api-def.ts` 声明；
+- IPC 路径统一在 `app/desktop/common/api/api-def.ts` 声明；
 - 路径使用 `<domain>/<action>` 格式，例如 `watch-history/update-progress`；
 - Controller 负责注册路径；
 - Service 不感知 IPC；
@@ -335,8 +353,8 @@ IPC 类型只是编译期约束。文件路径、设置项、枚举值等外部�
 
 ## 7. 数据库和迁移
 
-- Drizzle 表定义只能放在 `src/backend/infrastructure/db/tables/`；
-- 数据库查询和映射放在 `src/backend/infrastructure/db/`；
+- Drizzle 表定义只能放在 `app/desktop/backend/infrastructure/db/tables/`；
+- 数据库查询和映射放在 `app/desktop/backend/infrastructure/db/`；
 - Service 不直接写 SQL；
 - 迁移文件由 Drizzle 生成，不手动修改 `drizzle/migrations/`；
 - 修改表结构时，先改 schema，再运行 `yarn drizzle-kit generate`。

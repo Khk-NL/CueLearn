@@ -1,4 +1,4 @@
-// src/backend/ipc/renderer-log.ts
+// app/desktop/backend/ipc/renderer-log.ts
 import { ipcMain } from 'electron';
 import { SimpleEvent } from '@/common/log/simple-types';
 import { writeEvent } from '@/backend/infrastructure/logger';

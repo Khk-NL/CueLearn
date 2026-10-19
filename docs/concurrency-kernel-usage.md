@@ -1,6 +1,6 @@
 # 并发内核使用说明
 
-本文档说明 `src/backend/utils/concurrency` 的统一并发能力如何使用，以及重入与锁顺序规则。
+本文档说明 `app/desktop/backend/utils/concurrency` 的统一并发能力如何使用，以及重入与锁顺序规则。
 
 ## 1. 总览
 

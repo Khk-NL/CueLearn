@@ -6,7 +6,7 @@ import MainWindowRegistry from '@/backend/infrastructure/system/MainWindowRegist
 import { WindowState } from '@/common/types/Types';
 import { getMainLogger } from '@/backend/infrastructure/logger';
 
-/** 首页的设计尺寸，与 src/main.ts 创建窗口时的初始尺寸保持一致。 */
+/** 首页的设计尺寸，与 app/desktop/main.ts 创建窗口时的初始尺寸保持一致。 */
 const HOME_WIDTH = 1200;
 const HOME_HEIGHT = 800;
 /** 尺寸判定中，最后一次 resize 事件之后多久视为稳定。 */

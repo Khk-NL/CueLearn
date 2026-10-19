@@ -18,12 +18,12 @@
         "jsx": "react-jsx",
         "paths": {
             "@/*": [
-                "./src/*"
+                "./app/desktop/*"
             ]
         }
     },
     "include": [
-        "src",
+        "app/desktop",
         "e2e",
         "vite.*.config.ts",
         "vitest.config.ts",

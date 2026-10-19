@@ -2,7 +2,7 @@
  * 字幕翻译风格的设置键与解析逻辑。
  *
  * 批量提示词模板与拼装已下放到各引擎网关自持
- * （见 src/backend/infrastructure/translate/subtitleBatchPrompt.ts），
+ * （见 app/desktop/backend/infrastructure/translate/subtitleBatchPrompt.ts），
  * 这里只保留风格默认值、设置键与风格签名，供设置与缓存键使用。
  */
 import { TranslationMode } from '@/common/types/TranslationResult';

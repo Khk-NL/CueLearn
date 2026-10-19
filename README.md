@@ -26,6 +26,12 @@ CueLearn 是面向本机视频的学习桌面应用。用户可以边看视频�
 
 小组成员从 `main` 创建功能分支并通过 PR 协作，具体步骤见 [小组协作开发指南](docs/team-development.md)。
 
+## 课程代码结构
+
+现有桌面源码已从 `src/` 整体移入 `app/desktop/`，播放器、React 界面、IPC、主进程服务和原有测试都在该目录中；构建配置与 `@/` 别名已同步调整。构建工具和资源仍位于仓库根目录，原启动命令继续从根目录执行。
+
+课程要求的 `app/models.py`、`app/storage.py`、`app/main.py` 与 `tests/test_api.py` 已建立职责骨架，Python API、事件采集及课程测试由小组本周实现。梁负责 API 成功、404、422 和统计验证，肖负责接口，李负责模型，郑负责存储报表，严负责桌面采集。具体交付见[本周后端任务与分工](project-docs/本周后端任务与分工.md)与[目录说明](app/README.md)。
+
 ## 开发检查
 
 应用沿用 React → Electron IPC → 主进程服务的分层。常用检查命令为 `node_modules\.bin\tsc.cmd --noEmit`、`yarn lint` 和 `yarn test:run`。远程 PocketBase 与 AI 服务尚待使用者配置，不能视作已经过实机验收。

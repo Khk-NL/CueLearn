@@ -12,7 +12,7 @@
     "package": "yarn run download && electron-forge package",
     "make": "yarn run download && electron-forge make",
     "publish": "yarn run download && electron-forge publish",
-    "lint": "eslint -c .eslintrc.json --ext .ts,.tsx src",
+    "lint": "eslint -c .eslintrc.json --ext .ts,.tsx app/desktop",
     "test": "run-s test:base",
     "test:ui": "yarn run test:base --ui",
     "test:base": "cross-env ELECTRON_RUN_AS_NODE=1 electron node_modules/vitest/vitest.mjs",

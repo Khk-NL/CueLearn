@@ -1,4 +1,4 @@
-// src/backend/controllers/AiTransController.ts
+// app/desktop/backend/controllers/AiTransController.ts
 
 import registerRoute from '@/backend/controllers/ipc/registerRoute';
 

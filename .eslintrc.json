@@ -37,10 +37,10 @@
         "import/resolver": {
             "node": {
                 "extensions": [".js", ".jsx", ".ts", ".tsx"],
-                "paths": ["src"]
+                "paths": ["app/desktop"]
             },
             "alias": {
-                "map": [["@", "./src"]],
+                "map": [["@", "./app/desktop"]],
                 "extensions": [".js", ".jsx", ".ts", ".tsx"]
             }
         },
@@ -71,8 +71,8 @@
     },
     "overrides": [
         {
-            "files": ["src/fronted/features/**/*.{ts,tsx}"],
-            "excludedFiles": ["src/fronted/features/**/*Api.ts"],
+            "files": ["app/desktop/fronted/features/**/*.{ts,tsx}"],
+            "excludedFiles": ["app/desktop/fronted/features/**/*Api.ts"],
             "rules": {
                 "no-restricted-imports": [
                     "error",
@@ -88,7 +88,7 @@
             }
         },
         {
-            "files": ["src/**/__tests__/**/*.{ts,tsx,js,jsx}", "src/**/*.{test,spec}.{ts,tsx,js,jsx}"],
+            "files": ["app/desktop/**/__tests__/**/*.{ts,tsx,js,jsx}", "app/desktop/**/*.{test,spec}.{ts,tsx,js,jsx}"],
             "rules": {
                 "no-restricted-syntax": [
                     "error",

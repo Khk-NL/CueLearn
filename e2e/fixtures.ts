@@ -7,7 +7,7 @@ import {
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ONBOARDING_COMPLETED_VERSION_KEY } from '../src/common/constants/systemConfigKeys';
+import { ONBOARDING_COMPLETED_VERSION_KEY } from '../app/desktop/common/constants/systemConfigKeys';
 
 /** 当前引导版本号，与 OnboardingView 的 CURRENT_ONBOARDING_VERSION 一致。 */
 const ONBOARDING_VERSION = '1';

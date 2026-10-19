@@ -2,6 +2,8 @@
 
 产品定位、开源项目分工与后续复用原则见[产品定位与开源复用路线](product-positioning.md)。本文记录当前功能与运行配置；规划中的语义检索和社区能力不计入当前验收。
 
+2026 年 10 月 19 日按课程框架将原 `src/` 全部源码迁入 `app/desktop/`，配置中的源码入口与别名已同步调整。课程 `app/main.py`、`app/models.py`、`app/storage.py` 和 `tests/test_api.py` 仍为待实现骨架；五人本周任务与最新分工见[本周后端任务与分工](../project-docs/本周后端任务与分工.md)。
+
 ## 功能流程
 
 1. 启动 PocketBase，打开 CueLearn 的「语境学习」页，保存本机或 HTTPS 服务地址，注册并登录。
@@ -40,6 +42,7 @@ Gitee 仓库创建后，在本机执行 `git remote add gitee <实际仓库地�
 
 ## 验证记录与待验收项
 
+- 2026-10-19 课程目录迁移：709 个原源码文件均已迁入 `app/desktop/`，701 个文件内容逐字节一致，另外 8 个文件仅调整源码注释、图片导入或 Tailwind 配置路径。静态检查定位到 2653 个本地模块引用，均可解析到文件；Electron 入口、渲染入口、别名、测试初始化与样式配置的目标路径已核对。4 个 JSON 配置可解析，5 个 Python 骨架语法有效，数据库与缓存忽略规则生效，`git diff --check` 通过。当前检出没有 `node_modules`，本次没有重新安装依赖，也未运行完整 TypeScript、lint、Vitest 或桌面构建；此前的验证结果不自动代表迁移后运行已通过。Python 骨架没有业务实现或测试断言，不能视为课程 API 接入或 pytest 全绿。
 - 2026-10-08 内测打包准备：修正 Windows 资源下载时 ZIP 解压命令的参数传递，使用 Node 直接调用 PowerShell；`yarn run download` 已在本机完成。TypeScript 静态检查通过。完整 ESLint 仍为 5 个错误、57 个警告；完整 Vitest 仍为 366 项通过、26 项失败、22 项跳过，不能记为通过。本机 Windows 打包在重编译 `better-sqlite3` 时因缺少完整的 Windows SDK 10.0.26100.0 工具而停止；内测包计划改由仓库现有的 GitHub Actions 打包链路生成。
 - 2026-10-08：本分支审查修复后运行 `node_modules\.bin\tsc.cmd --noEmit`，通过。
 - 2026-10-08：本次改动涉及的 TypeScript 文件针对性 ESLint 检查为 0 error、9 个既有未使用变量 warning。完整 ESLint 为 5 个 error、57 个 warning；审查时的 `LearningPage.tsx` 同步 effect 更新状态错误已修正，剩余 error 均在本次未修改的既有文件，仓库完整 lint 仍不能记为通过。

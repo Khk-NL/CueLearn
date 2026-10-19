@@ -1,8 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import React, { cloneElement, ReactElement } from 'react';
 import { cn } from '@/fronted/lib/utils';
-import logoLight from '../../../../assets/logo-light.png';
-import logoDark from '../../../../assets/logo-dark.png';
+import logoLight from '../../../../../assets/logo-light.png';
+import logoDark from '../../../../../assets/logo-dark.png';
 import useFile from '@/fronted/features/file-browser/fileStore';
 import useSetting from '@/fronted/features/settings/settingsStore';
 import { BookOpen, Captions, Rotate3D, Settings, SquareSplitHorizontal, Star, User, Video } from 'lucide-react';

@@ -34,7 +34,9 @@ git remote add upstream https://github.com/solidSpoon/DashPlayer.git
 git fetch upstream
 ```
 
-合并前在独立分支检查上游改动。课程功能主要位于 `src/backend/services/LearningService.ts`、`src/backend/infrastructure/learning/`、`src/fronted/features/learning/`、`src/common/contracts/learning.ts` 和 `pb_migrations/`；接入点集中在路由、IoC、收藏按钮和导航中。品牌与发行配置有少量专门修改，更新上游时重点检查这些冲突。不要将上游发布地址和 CueLearn 的更新地址混用。
+合并前在独立分支检查上游改动。课程功能主要位于 `app/desktop/backend/services/LearningService.ts`、`app/desktop/backend/infrastructure/learning/`、`app/desktop/fronted/features/learning/`、`app/desktop/common/contracts/learning.ts` 和 `pb_migrations/`；接入点集中在路由、IoC、收藏按钮和导航中。品牌与发行配置有少量专门修改，更新上游时重点检查这些冲突。不要将上游发布地址和 CueLearn 的更新地址混用。
+
+课程目录调整后，上游的 `src/` 对应本仓库的 `app/desktop/`。同步更新时先核对 Git 对目录重命名的识别，再处理新增文件与构建入口；内部 `@/` 导入保留原有写法，资源与迁移位置仍以仓库根目录为准。Python 课程入口与桌面源码分开维护。
 
 ## 资源与第三方服务
 

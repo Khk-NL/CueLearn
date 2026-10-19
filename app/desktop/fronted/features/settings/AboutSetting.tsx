@@ -17,8 +17,8 @@ import {
     Sparkles,
     Tag,
 } from 'lucide-react';
-import logoLight from '../../../../assets/logo-light.png';
-import logoDark from '../../../../assets/logo-dark.png';
+import logoLight from '../../../../../assets/logo-light.png';
+import logoDark from '../../../../../assets/logo-dark.png';
 import useSetting from '@/fronted/features/settings/settingsStore';
 import SettingsPageShell from '@/fronted/features/settings/components/form/SettingsPageShell';
 import { SettingCard, SettingRow } from '@/fronted/features/settings/components/form/SettingCard';

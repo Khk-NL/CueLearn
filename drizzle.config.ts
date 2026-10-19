@@ -15,7 +15,7 @@ if (!configuredDbPath) {
 
 export default {
     dialect: 'sqlite',
-    schema: './src/backend/infrastructure/db/tables/*.ts',
+    schema: './app/desktop/backend/infrastructure/db/tables/*.ts',
     out: './drizzle/migrations',
     dbCredentials: {
         url: drizzleDbPath,

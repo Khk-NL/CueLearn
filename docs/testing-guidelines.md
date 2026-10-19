@@ -6,7 +6,7 @@
 
 1. **测行为，不测实现**：断言的必须是可观测结果——返回值、数据库状态、渲染出的 DOM、抛出的错误。禁止把 `expect(mock).toHaveBeenCalledXxx` 作为主断言（可作为交互边界条件的辅助断言）。
 2. **用真实依赖，少 mock**：项目使用 SQLite + drizzle，起内存库（`createMemoryDb()`）比 mock 仓储便宜且真实。服务层测试一律走内存库，禁止 mock 仓储层。
-3. **不测第三方库**：`src/fronted/components/ui/`（shadcn 生成）、lucide 图标等第三方代码不写测试。它们坏了应该升级依赖，而不是用测试钉住现状。
+3. **不测第三方库**：`app/desktop/fronted/components/ui/`（shadcn 生成）、lucide 图标等第三方代码不写测试。它们坏了应该升级依赖，而不是用测试钉住现状。
 4. **测试跟着源码走**：删除或重构模块时，同步删除对应测试文件；不留孤儿测试与死配置。
 5. **失败要修根因**：测试挂了先判断是"实现错了"还是"测试错了"。禁止通过加 `.skip`、删断言、放宽期望值让测试变绿。
 
@@ -14,11 +14,11 @@
 
 | 层 | 位置 | 测什么 | mock 策略 |
 |---|---|---|---|
-| 纯函数 | `src/common/utils`、`src/backend/utils` | 输入输出、边界条件 | 不 mock，全覆盖 |
-| 服务层 | `src/backend/services` | 业务规则与数据库交互的真实行为 | 内存 SQLite，不 mock 仓储 |
-| 业务组件 | `src/fronted/components/shared`、`src/fronted/features` | 用户可见的交互行为 | 仅 mock 外部边界（IPC、TTS/网络） |
-| IPC 契约 | `src/backend/controllers` | handler 入参/出参形状 | 按需 mock service |
-| UI 基础件 | `src/fronted/components/ui` | **不测** | — |
+| 纯函数 | `app/desktop/common/utils`、`app/desktop/backend/utils` | 输入输出、边界条件 | 不 mock，全覆盖 |
+| 服务层 | `app/desktop/backend/services` | 业务规则与数据库交互的真实行为 | 内存 SQLite，不 mock 仓储 |
+| 业务组件 | `app/desktop/fronted/components/shared`、`app/desktop/fronted/features` | 用户可见的交互行为 | 仅 mock 外部边界（IPC、TTS/网络） |
+| IPC 契约 | `app/desktop/backend/controllers` | handler 入参/出参形状 | 按需 mock service |
+| UI 基础件 | `app/desktop/fronted/components/ui` | **不测** | — |
 | e2e | `e2e/` | 跨进程真实链路：界面操作 → IPC → 数据库/配置文件 | 不 mock，启动真实应用；见 [e2e 测试指南](./e2e-testing.md) |
 
 ## 3. 依赖注入约定
@@ -44,7 +44,7 @@ export class TagServiceImpl implements TagService {
 
 ## 4. 内存数据库基建
 
-`src/test/database.ts` 提供 `createMemoryDb()`：每次调用返回跑完全部 drizzle 迁移的独立 `:memory:` SQLite。测试里直接插入表数据预置场景，或通过真实仓储装配服务：
+`app/desktop/test/database.ts` 提供 `createMemoryDb()`：每次调用返回跑完全部 drizzle 迁移的独立 `:memory:` SQLite。测试里直接插入表数据预置场景，或通过真实仓储装配服务：
 
 ```typescript
 import { createMemoryDb } from '@/test/database';

@@ -12,7 +12,7 @@
  *   实测约 3.8 万词条、5MB 左右，覆盖日常查词的绝大多数场景。
  * - 考试标签只保留 zk/gk/cet4/cet6/ky/toefl/ielts/gre（与前端 i18n 映射一致）。
  * - 产物需要提交到仓库；表结构契约见
- *   src/backend/infrastructure/translate/builtinDictionarySchema.ts（DDL 与 schema_version 必须一致）。
+ *   app/desktop/backend/infrastructure/translate/builtinDictionarySchema.ts（DDL 与 schema_version 必须一致）。
  * - node:sqlite 在 node 22.x 需要 --experimental-sqlite，缺 flag 时脚本会以该 flag 自重启。
  */
 
