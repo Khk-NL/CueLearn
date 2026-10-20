@@ -24,6 +24,7 @@ uv run pytest -v
 - 文档：http://127.0.0.1:8011/docs
 - 报表页：http://127.0.0.1:8011/report
 - 行为采集：`POST /events` → 表 `learning_events`（匿名 `user_key`，不采姓名）
+- 业务模型字段表与「存什么」说明：[业务模型与数据存储设计](../project-docs/业务模型与数据存储设计.md)
 - 数据库文件 `learn.db` 本地生成，已在 `.gitignore`
 
 桌面应用仍通过 Electron IPC 与 PocketBase；本 Python 服务独立承载课程要求的落库、采集与统计展示。分工见 [本周后端任务与分工](../project-docs/本周后端任务与分工.md)。
