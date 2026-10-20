@@ -368,6 +368,19 @@ def insert_learning_event(
             "created_at": now,
         }
 
+def get_learning_event(event_id: int) -> dict[str, Any] | None:
+    """按 id 取单条行为事件。使用 ? 占位符防止 SQL 注入。"""
+    with _connect() as conn:
+        row = conn.execute(
+            """
+            SELECT id, user_key, event_type, target_type, target_id, payload, created_at
+            FROM learning_events
+            WHERE id = ?
+            """,
+            (event_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
 
 def list_learning_events(limit: int = 100) -> list[dict[str, Any]]:
     """最近写入的行为事件，供报表页展示采集结果。"""
