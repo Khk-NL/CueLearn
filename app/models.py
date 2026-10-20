@@ -126,7 +126,10 @@ class ReviewEventCreate(BaseModel):
     """对应确认单 learning/review。reviewed_at 不由客户端提交。"""
 
     user_key: str = Field(pattern=USER_KEY_PATTERN, description="匿名用户标识")
-    vocabulary_item_id: int = Field(description="词条 id，对应确认单里的 wordId")
+    # 词条 id 是数据库自增主键，从 1 开始。0 或负数不可能对应真实词条，
+    # 属于「填错数据」而不是「找不到数据」，因此在模型层返回 422，
+    # 而不是交给存储层再报 404。
+    vocabulary_item_id: int = Field(ge=1, description="词条 id，对应确认单里的 wordId")
     rating: ReviewRating
     duration_ms: int | None = Field(default=None, ge=0, description="作答时长（毫秒），扩展字段，可不传")
 
@@ -167,6 +170,10 @@ class LearningEventCreate(BaseModel):
         value = value.strip()
         if not value:
             raise ValueError("对象标识不能为空")
+        # 与 WordContextCreate 同一条约束：事件表只存媒体指纹或业务 id。
+        # 一旦放过 「D:/videos/lecture.mp4」这类值，本机路径就随事件上报进了数据库。
+        if "/" in value or "\\" in value:
+            raise ValueError("对象标识不能是本机文件路径，请改传媒体指纹或业务 id")
         return value
 
     @field_validator("payload")
