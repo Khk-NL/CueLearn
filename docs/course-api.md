@@ -1,5 +1,13 @@
 # CueLearn 课程业务接口
 
+> **2026-10-20 更新（Yan）**：下方原 `/learners`、`/review-events` 接口说明对应已合并的初版实现。  
+> 当前仓库以生词 / 复习 / **`POST /events` 行为采集** / **LEFT JOIN 报表** 为准，请改看：  
+> - 运行与使用：`CueLearn本地使用说明.md`  
+> - 采集与统计证据：`project-docs/数据采集与展示记录.md`  
+> - 交互文档：`uv run fastapi dev app/main.py --host 127.0.0.1 --port 8011` → http://127.0.0.1:8011/docs  
+
+---
+
 本次将 `app/main.py` 从职责骨架实现为六个可运行的 FastAPI 接口，每个业务路由均在装饰器中显式声明 `response_model`。请求模型与返回模型分开，路由只编排请求、存储和错误，不直接拼装 SQL。
 
 ## 实现边界

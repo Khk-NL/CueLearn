@@ -1,18 +1,17 @@
 [project]
-name = "cuelearn-course-api"
-version = "0.1.0"
-description = "CueLearn 本机课程匿名学习事件与统计服务"
+name = "cuelearn-learning-api"
+version = "0.3.0"
+description = "CueLearn 视频语境学习系统 · 学习数据采集后端（SQLite 模拟 PocketBase）"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.115,<1",
-    "pydantic>=2.10,<3",
-    "uvicorn>=0.34,<1",
+    "fastapi[standard]>=0.115",
 ]
 
 [dependency-groups]
 dev = [
-    "httpx2>=2.14.0",
-    "pytest>=8,<10",
+    "pytest>=8.0",
+    "httpx>=0.27",
 ]
 
 [tool.uv]
