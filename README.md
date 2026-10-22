@@ -30,9 +30,9 @@ CueLearn 是面向本机视频的学习桌面应用。用户可以边看视频�
 
 现有桌面源码已从 `src/` 整体移入 `app/desktop/`，播放器、React 界面、IPC、主进程服务和原有测试都在该目录中；构建配置与 `@/` 别名已同步调整。构建工具和资源仍位于仓库根目录，原启动命令继续从根目录执行。
 
-课程要求的 `app/models.py`、`app/storage.py`、`app/main.py` 已实现本机 Python API，提供生词、复习、独立行为事件与 SQLite 报表。`tests/test_api.py` 覆盖成功、404、422、真实落库与统计；2026-10-22 在 uv 锁定环境与 Python 3.12.14 下执行 `uv run pytest -v`，**84 项通过，用时3.91秒，无警告或跳过**。测试使用临时库，根目录 `learn.db` 在运行前后均不存在。
+课程要求的 `app/models.py`、`app/storage.py`、`app/main.py` 已实现本机 Python API，提供生词、复习、独立行为事件与 SQLite 报表。`tests/test_api.py` 覆盖成功、404、422、真实落库与统计；2026-10-22 在 uv 锁定环境与 Python 3.12.14 下执行 `uv run pytest -v`，**125 项通过，用时19.41秒，无警告或跳过**。测试使用临时库，根目录 `learn.db` 在运行前后均不存在。
 
-该课程服务不替代或同步桌面 PocketBase，桌面自动事件采集仍待联调；仅适合可信本机演示。梁负责 API 测试与统计验证，肖负责接口，李负责模型，郑负责存储报表，严负责桌面采集。接口和启动方式见[课程接口说明](docs/course-api.md)；本轮审查与修复见[后端审查与测试验收](project-docs/后端审查与测试验收.md)，分工见[本周后端任务与分工](project-docs/本周后端任务与分工.md)。
+该课程服务保留独立 SQLite 分析副本，不替代 PocketBase。桌面已接入收藏、复习的匿名采集及可见作答计时；在「语境学习」填写本机课程服务地址后启用，留空关闭。仅适合可信本机演示。梁负责 API 测试与统计验证，肖负责接口，李负责模型，郑负责存储报表，严负责桌面采集。接口和启动方式见[课程接口说明](docs/course-api.md)；本轮审查与修复见[后端审查与测试验收](project-docs/后端审查与测试验收.md)，分工见[本周后端任务与分工](project-docs/本周后端任务与分工.md)。
 
 ## 开发检查
 
@@ -43,3 +43,7 @@ CueLearn 是面向本机视频的学习桌面应用。用户可以边看视频�
 本项目基于 [solidSpoon 的原项目](https://github.com/solidSpoon/DashPlayer)继续开发，保留其 GNU AGPLv3 许可及原有版权信息。CueLearn 的修改也按仓库中的 [LICENSE](LICENSE) 发布。
 
 内置离线词典数据基于 [ECDICT](https://github.com/skywind3000/ECDICT) 常用词子集构建，ECDICT 采用 MIT 许可；复习排程使用 MIT 许可的 [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs)。具体来源与使用要求见 [开源使用说明](OPEN_SOURCE_USAGE.md)。
+
+## 课程交互原型
+
+解压根目录 `CueLearn-学习原型.zip` 后打开其中的 `index.html`，可离线演示目标、视频语境、复习纠错、来源核对、测验与学习评价。根目录保留临时HTML/CSS和4张PNG；原有Electron入口未覆盖。原型使用合成数据，详见 [原型交付说明](docs/prototype-delivery.md)。

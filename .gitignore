@@ -94,6 +94,7 @@ out/
 # Playwright
 test-results/
 playwright-report/
+.playwright-cli/
 
 .idea
 

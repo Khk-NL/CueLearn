@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CueLearn 学习与复习原型</title><link rel="icon" href="data:,"><link rel="stylesheet" href="prototype.css"></head>
+<body><div class="shell">
+<aside class="sidebar"><a class="brand" href="prototype-learning.html"><span class="brand-mark">◧</span>CueLearn</a><p class="brand-sub">在视频语境中学习与记忆</p><p class="nav-label">学习空间</p><nav class="nav" aria-label="主导航"><a class="active" href="prototype-learning.html"><span class="nav-icon">◉</span>语境复习</a><a href="prototype-notebook.html"><span class="nav-icon">▤</span>学习笔记本</a><a href="prototype-report.html"><span class="nav-icon">▥</span>学习统计</a></nav><div class="side-note">从一句原声开始<br>把理解变成可以再次想起的知识。</div><div class="side-profile"><span class="avatar">学</span><span>演示学习者<br><span class="mini muted">个人学习空间</span></span></div></aside>
+<main class="main"><header class="topbar"><div><p class="eyebrow">MY LEARNING SPACE</p><h1>回到语境，再记住一次</h1><p class="subtitle">先听原句、尝试回忆，再揭示释义并记录这次学习。</p></div><span class="prototype-badge">交互原型 · 演示数据</span></header>
+<section class="goal-banner"><div><h2>本轮目标：理解一个真实语境，完成一次主动回忆</h2><p>教学策略：情境学习 + 检索练习。先听原句 → 选择词义 → 核对出处 → 记录评分。</p></div><div class="goal-steps"><span>① 观看与查词</span><span>② 回忆与练习</span><span>③ 评价与计划</span></div></section>
+<div class="stats"><section class="stat"><span class="stat-icon">◷</span><div class="stat-label">今日待复习</div><div class="stat-number"><span id="due">12</span><small>个词</small></div><div class="stat-trend">按间隔复习队列安排</div></section><section class="stat"><span class="stat-icon">✓</span><div class="stat-label">今日已完成</div><div class="stat-number"><span id="completed">8</span><small>次复习</small></div><div class="stat-trend">每一次回忆都会留下记录</div></section><section class="stat"><span class="stat-icon">↗</span><div class="stat-label">近七日记得比例</div><div class="stat-number">86<small>%</small></div><div class="stat-trend">基于自己提交的复习评分</div></section></div>
+<div class="content-grid"><section class="panel"><div class="panel-head"><div><h2>原声语境</h2><p class="subtitle">Language &amp; Memory · Chapter 02</p></div><span class="tag">已关联字幕</span></div><div class="video-stage"><span class="video-kicker">LANGUAGE &amp; MEMORY</span><div class="video-title">Context makes<br>it stick.</div><span class="play-circle" aria-hidden="true">▶</span></div><div class="video-control"><span>▶</span><span>02:14</span><div class="timeline"><span></span></div><span>06:20</span><button class="text-button" id="play">播放原句</button></div><div class="caption">Words become easier to remember in <em>context</em>.<div class="caption-actions"><button class="text-button" id="lookup">查看词义</button><button class="secondary" id="favorite">收藏当前语境 ＋</button></div></div></section>
+<section class="panel"><div class="panel-head"><h2>当前复习卡片</h2><span class="mini muted">第 1 张 / 12 张</span></div><div class="card-body"><div class="mode-row"><button class="mode-button active" data-mode="guided">基础引导</button><button class="mode-button" data-mode="challenge">独立挑战</button></div><p class="scaffold" id="scaffold">学习支架：先联系整句，想一想 context 描述的是哪种“背景”。</p><div class="word">context</div><div class="phonetic">/ˈkɒntekst/ &nbsp; n.</div><p class="sentence">“Words become easier to remember in context.”</p><button class="source-link" id="source">↗ Language &amp; Memory &nbsp; 02:14–02:19</button><div class="reveal-area"><button class="primary" id="reveal">我已尝试回忆，显示释义</button><div id="meaning" hidden><strong>语境；上下文；背景</strong><p class="mini muted meaning-note">这句话强调：词汇的意义与它出现的场景相连。</p></div></div><div class="practice" id="practice" hidden><p><strong>语境选择题</strong><br>原句中的 context 最接近哪一项？</p><div class="choices"><button class="choice" id="wrong-answer">A. 一场比赛</button><button class="choice" id="right-answer">B. 词语出现的上下文与情境</button></div><div class="feedback" id="practice-feedback" role="status" hidden></div></div><div class="ratings"><button class="rating again" data-rate="忘记" disabled>忘记<small>需要重新学习</small></button><button class="rating" data-rate="模糊" disabled>模糊<small>还需要提示</small></button><button class="rating good" data-rate="记得" disabled>记得<small>能够独立回忆</small></button></div><a class="next-step" id="continue" href="prototype-notebook.html" hidden>已完成回忆 → 前往笔记本核对出处与测验</a></div></section></div>
+<div class="service"><span class="dot" id="service-dot"></span><span id="service-text">课程采集服务 · 模拟已连接</span><span class="address">127.0.0.1:8011 · 仅展示模拟状态</span><button class="text-button" id="connection">模拟断开</button></div>
+<section class="section-gap"><div class="section-title"><h2>最近收藏的语境</h2><span class="mini muted">来自你正在学习的视频</span></div><div class="recent-list"><article class="recent-item"><span class="status-small">原句已保存</span><b>retrieve</b><p>Language &amp; Memory &nbsp; · &nbsp; 03:42</p></article><article class="recent-item"><span class="status-small">原句已保存</span><b>meaningful</b><p>Learning to Learn &nbsp; · &nbsp; 01:28</p></article><article class="recent-item"><span class="status-small">原句已保存</span><b>recall</b><p>Language &amp; Memory &nbsp; · &nbsp; 04:11</p></article></div></section><section class="privacy-note"><div><b>数据与隐私</b><br>本原型仅使用合成匿名数据，不联网，不收集姓名、联系方式或本机视频。</div><div><b>未成年人保护 · 演示模式</b><br>匿名展示、无公开排名；建议每20分钟休息，可随时暂停或退出学习。</div></section><p class="footer">CueLearn 课程交互原型 · 页面中的视频、学习记录与连接状态均为演示内容</p></main></div>
+<div class="toast" role="status" id="toast" hidden></div><div class="dialog" id="dialog" hidden><section class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><p class="eyebrow">字幕出处 · 02:14–02:19</p><h2 id="dialog-title">Language &amp; Memory</h2><p class="english">Words become easier to remember in context.</p><p>原型演示：在正式应用中，此操作会定位本机视频的对应字幕时间点。</p><button class="primary" id="close-dialog">返回复习</button></section></div>
+<script>
+let connected=true;let rated=false;let attemptedWrong=false;
+/** 在原型中显示一次操作反馈，不发起联网请求。 */
+function notify(text){const node=document.getElementById('toast');node.textContent=text;node.hidden=false;setTimeout(hideToast,4000);}
+/** 隐藏短时提示。 */
+function hideToast(){document.getElementById('toast').hidden=true;}
+/** 揭示释义后允许评分，保持先回忆后作答的顺序。 */
+function revealAnswer(){document.getElementById('reveal').hidden=true;document.getElementById('meaning').hidden=false;document.getElementById('practice').hidden=false;}
+/** 启用一项演示评分。 */
+function enableRating(button){button.disabled=rated;}
+/** 只更新当前页面中的演示进度，不保存真实学习数据。 */
+function rateWord(event){if(rated)return;sessionStorage.setItem('cuelearn-prototype-review','done');document.getElementById('continue').hidden=false;rated=true;document.getElementById('due').textContent='11';document.getElementById('completed').textContent='9';document.querySelectorAll('[data-rate]').forEach(disableRating);notify(connected?'已记录“'+event.currentTarget.dataset.rate+'” · 演示采集成功':'复习已保存 · 采集状态未确认（演示）');}
+/** 完成本卡后禁用按钮，避免重复提交演示评分。 */
+function disableRating(button){button.disabled=true;}
+/** 展示来源定位的本地模拟。 */
+function openSource(){document.getElementById('dialog').hidden=false;document.getElementById('close-dialog').focus();}
+/** 关闭来源对话框。 */
+function closeSource(){document.getElementById('dialog').hidden=true;document.getElementById('source').focus();}
+/** 切换明确标识的模拟连接状态。 */
+function toggleConnection(){connected=!connected;document.getElementById('service-text').textContent='课程采集服务 · 模拟'+(connected?'已连接':'已断开');document.getElementById('service-dot').classList.toggle('offline',!connected);document.getElementById('connection').textContent=connected?'模拟断开':'模拟连接';}
+/** 答错时给出解释和原句提示，允许用户重试。 */
+function wrongAnswer(){attemptedWrong=true;document.getElementById('wrong-answer').classList.add('wrong');const feedback=document.getElementById('practice-feedback');feedback.hidden=false;feedback.classList.add('needs-help');feedback.textContent='再试一次：contest 才可表示比赛。原句说的是词汇出现的背景，请回看 context 前后的意思。';}
+/** 答对后解释依据并解锁自评分，强化正确理解。 */
+function rightAnswer(){document.getElementById('right-answer').classList.add('correct');const feedback=document.getElementById('practice-feedback');feedback.hidden=false;feedback.classList.remove('needs-help');feedback.textContent='答对了！context 指上下文和情境。原句把“更容易记住”与语境联系起来。'+(attemptedWrong?'你已根据提示完成纠错。':'继续用原声巩固这个用法。');document.querySelectorAll('[data-rate]').forEach(enableRating);}
+/** 切换学习支架，给不同熟悉程度的学习者选择。 */
+function chooseMode(event){const challenge=event.currentTarget.dataset.mode==='challenge';document.getElementById('scaffold').hidden=challenge;document.querySelectorAll('[data-mode]').forEach(clearMode);event.currentTarget.classList.add('active');}
+/** 清除另一个模式的视觉选中状态。 */
+function clearMode(button){button.classList.remove('active');}
+/** 绑定学习模式按钮。 */
+function bindMode(button){button.addEventListener('click',chooseMode);}
+document.querySelectorAll('[data-mode]').forEach(bindMode);document.getElementById('wrong-answer').addEventListener('click',wrongAnswer);document.getElementById('right-answer').addEventListener('click',rightAnswer);document.getElementById('reveal').addEventListener('click',revealAnswer);document.querySelectorAll('[data-rate]').forEach(bindRating);
+/** 为每项评分安装本页交互。 */
+function bindRating(button){button.addEventListener('click',rateWord);}
+/** 展示与字幕语境关联的查词信息。 */
+function lookupWord(){notify('context /ˈkɒntekst/：语境、上下文。可以连同字幕时间点收藏。');}
+/** 模拟收藏当前原句，反馈来源与时间点，不保存真实数据。 */
+function favoriteWord(){document.getElementById('favorite').textContent='当前语境已收藏 ✓';document.getElementById('favorite').disabled=true;notify('已收藏 context · 原句与02:14时间点已保留（演示）。');}
+document.getElementById('lookup').addEventListener('click',lookupWord);document.getElementById('favorite').addEventListener('click',favoriteWord);document.getElementById('source').addEventListener('click',openSource);document.getElementById('play').addEventListener('click',openSource);document.getElementById('close-dialog').addEventListener('click',closeSource);document.getElementById('connection').addEventListener('click',toggleConnection);
+</script></body></html>
