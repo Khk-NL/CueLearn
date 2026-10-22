@@ -36,6 +36,8 @@ CueLearn 是面向本机视频的学习桌面应用。用户可以边看视频�
 
 ## 开发检查
 
+Windows 本机可双击根目录 `start-cuelearn.cmd` 启动原有桌面前端。启动器明确使用 Node 22 和 Yarn Classic，避免某些 Corepack 包装命令固定使用系统 Node 24；依赖、原生模块和 SDK 排查见 [桌面启动说明](docs/desktop-startup.md)。
+
 应用沿用 React → Electron IPC → 主进程服务的分层。常用检查命令为 `node_modules\.bin\tsc.cmd --noEmit`、`yarn lint` 和 `yarn test:run`。远程 PocketBase 与 AI 服务尚待使用者配置，不能视作已经过实机验收。
 
 ## 开源
