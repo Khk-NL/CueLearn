@@ -30,7 +30,9 @@ CueLearn 是面向本机视频的学习桌面应用。用户可以边看视频�
 
 现有桌面源码已从 `src/` 整体移入 `app/desktop/`，播放器、React 界面、IPC、主进程服务和原有测试都在该目录中；构建配置与 `@/` 别名已同步调整。构建工具和资源仍位于仓库根目录，原启动命令继续从根目录执行。
 
-课程要求的 `app/models.py`、`app/storage.py`、`app/main.py` 与 `tests/test_api.py` 已建立职责骨架，Python API、事件采集及课程测试由小组本周实现。梁负责 API 成功、404、422 和统计验证，肖负责接口，李负责模型，郑负责存储报表，严负责桌面采集。具体交付见[本周后端任务与分工](project-docs/本周后端任务与分工.md)与[目录说明](app/README.md)。
+课程要求的 `app/models.py`、`app/storage.py`、`app/main.py` 已实现本机 Python API，提供生词、复习、独立行为事件与 SQLite 报表。`tests/test_api.py` 覆盖成功、404、422、真实落库与统计；2026-10-22 在 uv 锁定环境与 Python 3.12.14 下执行 `uv run pytest -v`，**84 项通过，用时3.91秒，无警告或跳过**。测试使用临时库，根目录 `learn.db` 在运行前后均不存在。
+
+该课程服务不替代或同步桌面 PocketBase，桌面自动事件采集仍待联调；仅适合可信本机演示。梁负责 API 测试与统计验证，肖负责接口，李负责模型，郑负责存储报表，严负责桌面采集。接口和启动方式见[课程接口说明](docs/course-api.md)；本轮审查与修复见[后端审查与测试验收](project-docs/后端审查与测试验收.md)，分工见[本周后端任务与分工](project-docs/本周后端任务与分工.md)。
 
 ## 开发检查
 

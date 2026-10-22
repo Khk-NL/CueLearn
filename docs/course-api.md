@@ -1,133 +1,156 @@
 # CueLearn 课程业务接口
 
-> **2026-10-20 更新（Yan）**：下方原 `/learners`、`/review-events` 接口说明对应已合并的初版实现。  
-> 当前仓库以生词 / 复习 / **`POST /events` 行为采集** / **LEFT JOIN 报表** 为准，请改看：  
-> - 采集与统计证据：`project-docs/数据采集与展示记录.md`  
-> - 交互文档：`uv run fastapi dev app/main.py --host 127.0.0.1 --port 8011` → http://127.0.0.1:8011/docs  
+本文对应当前 `app/main.py`、`app/models.py`、`app/storage.py` 的实现。课程服务提供生词与语境、复习记录、独立行为事件及 SQL 学习报表；接口采用下划线路径，例如 `/vocabulary_items` 和 `/review_events`。旧版 `/learners`、`/review-events` 与 UUID 事件协议已不适用。
 
----
+## 运行边界
 
-本次将 `app/main.py` 从职责骨架实现为六个可运行的 FastAPI 接口，每个业务路由均在装饰器中显式声明 `response_model`。请求模型与返回模型分开，路由只编排请求、存储和错误，不直接拼装 SQL。
+课程服务使用独立 SQLite 数据库进行本机课程演示。桌面应用继续通过 Electron IPC 和 PocketBase 保存账号及原有学习数据，本服务没有替代、同步或修改 PocketBase 的功能，也未将桌面按钮操作接入 HTTP 行为采集。
 
-## 实现边界
+`user_key` 是调用方提供的匿名标识，不是账号、令牌或认证凭据。服务没有鉴权，词条查询和报表不提供生产环境的权限隔离；请只监听可信本机地址 `127.0.0.1`。不要上传真实姓名、邮箱、密码、密钥或本机视频路径。字段格式与敏感键校验不能判断任意文字是否属于个人信息，调用方仍须提供合成演示数据或真正的匿名标识。
 
-本服务按本次任务明确授权的范围，用 SQLite 保存匿名参与者和复习学习事件，供本机课程演示。现有 PocketBase 继续保存桌面端账号、生词及 FSRS 排程；本服务不复制、同步或更新这些业务事实。
+## 安装与启动
 
-这不是原先已确定的全组架构，也不是已完成的桌面事件采集集成。HTTP 请求需要由调用方在复习成功提交后发送；取消、未完成或业务提交失败时不发送。`duration_ms` 由调用方提供，本服务只验证和保存，不假装已经实现桌面计时。匿名 UUID 不是认证凭据，本服务没有鉴权，应只在可信本机环境中监听 `127.0.0.1`。
-
-仓库和可查历史中未提供可运行的 Student/Enrollment Python 模板，因此此处采用 FastAPI 模型化 JSON 返回，以及标准 `HTTPException` / 422 错误格式。学习对象 `object_id` 是不含路径的外部标识；本服务不访问 PocketBase，也不声称校验了词条归属。
-
-## 安装与运行
-
-需要 Python 3.11 或以上版本和 [uv](https://docs.astral.sh/uv/getting-started/installation/)。在仓库根目录执行：
+需要 Python 3.11 及以上版本与 uv。在仓库根目录运行：
 
 ```powershell
 uv sync --locked
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8011
 ```
 
-打开 `http://127.0.0.1:8000/docs` 操作接口；OpenAPI 地址为 `http://127.0.0.1:8000/openapi.json`。若已建立 `.venv` 但终端尚未安装 uv，Windows 可以使用 `.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000` 启动已安装的服务。
+打开 `http://127.0.0.1:8011/docs` 查看和调用接口；OpenAPI 地址为 `/openapi.json`，报表网页为 `/report`。
 
-默认数据库为运行目录下 `.local/course-api/learn.db`，不会自动读取根目录的既有 `learn.db` 或 PocketBase 数据。可显式指定独立课程数据库：
+数据库固定为**仓库根目录的 `learn.db`**，与从哪个目录启动无关；启动时创建所需表，重复启动不会清空已有数据。数据库与 Python 缓存已加入 `.gitignore`，不要提交生成的数据。当前没有 `CUELEARN_API_DB` 环境变量配置入口，不应沿用旧说明中的配置方式。
 
-```powershell
-$env:CUELEARN_API_DB = "C:\course-demo\learn.db"
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
-```
+`DELETE /admin/reset` 会清空全部课程表并重置自增编号，只用于合成演示数据。测试使用独立临时数据库并通过 TestClient 生命周期启动服务，不应清空根目录的演示库。
 
-环境变量为空时报错；没有静默回退。仅导入模块不建库，应用启动时初始化表。每次存储操作提交或回滚后关闭连接，应用关闭时释放存储引用。请勿将配置指向真实业务数据库。数据库与 `.venv` 已由仓库忽略。
+## 接口契约
 
-## 接口表
+JSON 业务接口均显式声明 `response_model`；HTML 报表使用 `HTMLResponse`。
 
-| 方法 | 路径 | 请求模型 | response_model | 成功状态 |
-| --- | --- | --- | --- | --- |
-| POST | `/learners` | `LearnerCreate` | `LearnerRead` | 201 |
-| GET | `/learners` | 无 | `list[LearnerRead]` | 200 |
-| POST | `/review-events` | `ReviewEventCreate` | `ReviewEventRead` | 新建201，相同重试200 |
-| GET | `/review-events` | 查询参数 | `list[ReviewEventRead]` | 200 |
-| GET | `/review-events/{event_id}` | UUID路径参数 | `ReviewEventRead` | 200 |
-| GET | `/stats/learners` | 无 | `list[LearnerStatsRead]` | 200 |
+| 方法 | 路径 | 入参 | 成功响应 |
+| --- | --- | --- | --- |
+| GET | `/` | 无 | 200，服务名称、文档与报表地址 |
+| GET | `/health` | 无 | 200，`{"status":"ok"}` |
+| POST | `/vocabulary_items` | `VocabularyItemCreate` | 201，词条与全部语境，含服务端 ID 和创建时间 |
+| GET | `/vocabulary_items/{vocabulary_item_id}` | 正整数词条 ID | 200，词条与语境；不存在为404 |
+| POST | `/review_events` | `ReviewEventCreate` | 201，已保存的复习记录 |
+| GET | `/review_events?user_key=anon-a` | 匿名用户标识 | 200，`user_key`、`count` 和 `items`；没有记录时为空列表 |
+| POST | `/events` | `LearningEventCreate` | 201，已落库的行为事件 |
+| GET | `/reports/overview` | 无 | 200，生成时间、用户总数与各用户统计行 |
+| GET | `/report/data` | 无 | 200，与 `/reports/overview` 相同的统计结构 |
+| GET | `/report` | 无 | 200，用户统计与最近50条行为事件的 HTML 页面 |
+| DELETE | `/admin/reset` | 无 | 200，清空课程数据后的提示 |
 
-事件列表按 `occurred_at`、`id` 升序返回。可使用可选的 `learner_id` UUID 筛选，`limit` 默认为100，范围1至500；`offset` 默认为0，范围0至2147483647。已注册但没有事件的参与者返回空事件列表；未注册的参与者筛选返回404。参与者列表与统计返回完整注册范围，本机课程规模使用，不作为公网大数据分页方案。
+当前没有 `/events/{id}` HTTP 读取接口。存储层的 `get_learning_event()` 可用于真实落库验证，不能把存储函数当成已提供的路由。
 
-## 注册与提交示例
+### 收藏生词与语境
 
-首先 `POST /learners`，请求体为 `{}`。这是有意不收集个人资料的 `LearnerCreate`；额外字段会返回422。响应示例中的 UUID 和时间均为合成数据：
+在 `/docs` 中调用 `POST /vocabulary_items`，示例：
 
 ```json
 {
-  "id": "0b9a7d9f-1673-4d01-b05b-dd4f89aa5bc9",
-  "created_at": "2026-10-20T00:00:00Z"
+  "user_key": "anon-a",
+  "word": "context",
+  "definition": "语境",
+  "contexts": [
+    {
+      "sentence": "Keep the word in context.",
+      "media_fingerprint": "sha256-demo",
+      "subtitle_index": 3,
+      "start_seconds": 12.5
+    }
+  ]
 }
 ```
 
-使用实际注册响应中的 `id` 提交 `POST /review-events`：
+`contexts` 至少包含一条语境。文字字段去除首尾空白后不能为空；媒体指纹不能包含路径分隔符。字幕序号是非负整数，字幕秒数必须为有限的非负数，不能为无穷大或 NaN。
+
+同一用户收藏同一单词时返回原词条 ID，保留首次释义；精确相同的语境不会重复增加，不同语境追加保存。不同用户收藏相同单词会生成各自的词条。创建请求与响应模型分开，调用方不填写服务端的 `id`、`created_at` 等字段。
+
+### 提交复习与查询
+
+先取得实际创建的词条 ID，再提交 `POST /review_events`：
 
 ```json
 {
-  "learner_id": "0b9a7d9f-1673-4d01-b05b-dd4f89aa5bc9",
-  "object_id": "word:lesson_01",
-  "action": "review_submitted",
-  "occurred_at": "2026-10-20T08:00:00+08:00",
+  "user_key": "anon-a",
+  "vocabulary_item_id": 1,
   "rating": "remembered",
-  "duration_ms": 12000,
-  "client_event_id": "da935323-2457-449e-84c5-f2ffefc43b62"
+  "duration_ms": 1800
 }
 ```
 
-`learner_id`、`client_event_id` 必须是 UUID。`object_id` 长度1至128，只接受字母、数字、冒号、下划线和连字符，且首字符为字母或数字；不要使用真实个人信息。`action` 可省略，默认且仅支持 `review_submitted`。`rating` 仅接受 `forgot`、`unsure`、`remembered`。
+`rating` 只能为 `forgot`、`vague`、`remembered`，分别对应忘记、模糊、记得。词条 ID 必须属于提交的 `user_key`，否则返回404且不写入复习记录。`duration_ms` 单位为毫秒，可以省略或为 null，表示未采集时长；0表示实际记录为零，不能用来代替未知时长。
 
-`occurred_at` 必须为带时区的 ISO 日期字符串，保存及返回时转换为 UTC；不接受无时区日期或数字时间戳。`duration_ms` 必须是0至2147483647之间的 JSON 整数，单位毫秒，约24.9天为技术上限；字符串、布尔值、小数和空值都不接受。0表示实际记录为零，不能用来补齐没有采集的时长。
+JSON请求中的词条ID、字幕序号和时长使用整数校验，不接受布尔值、字符串或小数冒充整数，并限制在 SQLite 可存储的整数范围内，最大为 `9223372036854775807`；词条 ID 至少为1，时长和字幕序号至少为0。服务端生成 `reviewed_at`，使用本机时间。
 
-成功响应包括全部已验证事件字段，以及服务端生成的 `id` 和 `received_at`。例如：
+查询 `GET /review_events?user_key=anon-a` 返回该匿名标识的记录，按 ID 升序排列。当前没有复习请求幂等键：重复发送有效评分会产生多条记录并计入统计，调用方不能把重试当成自动去重。
+
+### 行为事件采集
+
+`POST /events` 接收独立的行为记录：
 
 ```json
 {
-  "id": "9883a2a6-24cf-4584-b361-a49b02f7305c",
-  "learner_id": "0b9a7d9f-1673-4d01-b05b-dd4f89aa5bc9",
-  "object_id": "word:lesson_01",
-  "action": "review_submitted",
-  "occurred_at": "2026-10-20T00:00:00Z",
-  "rating": "remembered",
-  "duration_ms": 12000,
-  "client_event_id": "da935323-2457-449e-84c5-f2ffefc43b62",
-  "received_at": "2026-10-20T00:00:01Z"
+  "user_key": "anon-a",
+  "event_type": "hint_requested",
+  "target_type": "subtitle",
+  "target_id": "sha256-demo:3",
+  "payload": "{\"level\":\"syntax\"}"
 }
 ```
 
-Create 不接收服务端 `id`、`received_at` 或其他额外字段。客户端需保存实际返回的匿名参与者标识；每次注册都会创建新的参与者，不等同于 PocketBase 登录。
+事件由服务端添加 `id` 和 `created_at`，保存到独立的 `learning_events` 表。新匿名标识首次收藏词条或上报行为时会进入 `users` 表，供报表保留完整用户范围。
 
-## 错误与事件去重
+- `event_type` 可选：`word_saved`、`word_lookup`、`review_submitted`、`hint_requested`、`translation_revealed`、`sentence_replayed`。
+- `target_type` 可选：`vocabulary_item`、`word_context`、`subtitle`、`media`。
+- `target_id` 是非空业务标识或指纹，不允许本机文件路径。
+- `payload` 是 JSON **对象文本**，不是直接嵌套的 JSON 对象；默认是 `"{}"`。不接受非 JSON 文本或数组；嵌套对象、列表中的姓名、邮箱、密码、令牌、密钥等敏感键会被拒绝。
 
-- 合法 UUID 但事件或关联参与者不存在：404，例如 `{"detail":"复习事件不存在"}`。
-- 格式错误、缺失必填字段、非法评分或负时长：422，`detail` 为标准验证错误数组。例如负时长会包含 `{"type":"greater_than_equal","loc":["body","duration_ms"],"msg":"Input should be greater than or equal to 0","input":-1,"ctx":{"ge":0}}`。
-- 已存在的 `(learner_id, client_event_id)` 与新内容冲突：409，例如 `{"detail":"client_event_id 已用于不同内容的复习事件"}`。
+调用收藏和复习接口不会自动写入通用事件表。调用方应在实际业务提交成功后另行上报 `/events`，不要把取消或提交失败标为成功；仅发送 `event_type=review_submitted` 也不会凭空创建复习评分或改变复习统计。桌面端自动计时、事件转发和账号映射仍需联调实现。
 
-同一参与者重试同一事件，必须复用 `client_event_id` 和原始内容。相同内容返回原记录和200，不改变事件 ID 或接收时间；同一时刻的等价时区表示也视为相同。内容不同则409，不覆盖原记录。不同参与者可以使用相同的客户端事件标识。唯一约束与单条冲突处理 SQL 保证并发重试不会重复写入。
+## 错误返回
 
-外部值全部通过 `?` 参数传入。事件表包含外键和独立的去重约束，没有通用 JSON 元数据入口，不接收密码、令牌或视频路径。
+请求模型拒绝未声明字段，避免拼错字段或把服务端生成字段误当成创建参数。422保留 FastAPI 的 `detail` 数组，每条包含 `type`、`loc` 和 `msg`；省略原始输入，避免无穷数值导致错误响应再次序列化失败。
+
+| 情况 | 状态与行为 |
+| --- | --- |
+| 合法词条 ID 不存在 | 404，`detail` 为不存在提示 |
+| 复习词条不存在或不属于给定匿名用户 | 404，不写入复习记录或创建额外用户 |
+| 缺少必填字段、非法评分或事件类型 | 422，`detail` 为字段错误数组 |
+| 负数、非整数 ID/时长、超出 SQLite 范围或非有限字幕秒数 | 422，不进入数据库写入 |
+| 非匿名格式 user_key、文件路径或敏感 payload | 422，不保存该请求 |
+| 没有复习记录或报表为空 | 200，空列表，不使用404 |
 
 ## 学习统计口径
 
-统计查询以完整 `learners` 表为起点，`LEFT JOIN review_events`。每条已接受的去重事件计一次，重复词条的不同复习仍分别计次。时长表示调用方报告的有效作答时长，不代表全部视频观看时间。
+报表以 `users` 为左表，将词条数和复习数据分别聚合后 `LEFT JOIN`，避免词条与复习记录交叉相乘。只收藏未复习、仅上报行为而未复习的用户都保留一行。返回行按 `user_key` 排序。
 
-| 字段 | 有事件 | 零事件 |
+| 字段 | 计算方式 | 没有对应数据时 |
 | --- | --- | --- |
-| `review_count` | 事件数量 | 0 |
-| `total_duration_ms` | 事件毫秒时长之和 | 0 |
-| `average_duration_ms` | 每次事件平均毫秒数 | null |
-| `remembered_rate` | remembered事件数 / 事件数，范围0至1 | null |
+| `vocabulary_count` | 该用户收藏的词条总数 | 0 |
+| `review_count` | 全部已保存复习记录数量 | 0 |
+| `today_completed` | `reviewed_at` 的本机日期等于今天的记录数量 | 0 |
+| `remembered_ratio_7d` | 最近七天滑动时间窗中 remembered 次数 / 复习次数，保留四位小数 | null |
+| `avg_duration_ms` | **全部历史**复习记录中非 null 时长的平均值，保留一位小数；不是近七日平均值 | null |
+| `due_count` | 使用课程固定间隔得到的当前到期词条数 | 没有词条时为0 |
 
-例如同一参与者的三条事件评分依次为forgot、unsure、remembered，时长为1000、2000、3000毫秒，则次数3、累计6000、平均2000、记得比例约0.3333。另一个已注册但没有事件的参与者也返回，次数与累计为0，其余为null。记得比例属于自评，不是客观测验正确率。
+“近七日”按本机当前时刻向前七天计算，不是本周或最近七个自然日。`remembered_ratio_7d` 是用户自评记得比例，不是客观测验正确率。通用行为事件只用于最近事件展示，不计入复习次数、平均复习时长或记得比例。
 
-## 验证方法与限制
+课程到期规则取每个词条最新的复习记录：未复习或最后评分为 forgot 时立即到期；vague 满一天到期；remembered 满三天到期。该规则用于课程展示，不是桌面端的 FSRS 算法，也不会更新 PocketBase 排程。
+
+`/reports/overview` 与 `/report/data` 共用统计逻辑；`/report` 使用相同统计行，并展示最近50条行为事件。生成时间与记录时间使用服务端本机时钟，不是客户端传来的学习时间。
+
+## 验证与演示
+
+执行课程 API 测试：
 
 ```powershell
 uv run pytest -v
 ```
 
-测试通过临时文件 SQLite 验证真实创建、查询、404/422、409冲突、UTC归一化、分页、重试与并发去重、跨应用重启持久化、零参与者统计、响应额外字段过滤，以及所有业务装饰器显式声明模型。不会使用真实用户数据库，也不靠 mock 仓储或空测试给出成功结论。
+测试使用临时 SQLite，覆盖真实写入与读取、成功与404/422、跨匿名用户误提交、数值与隐私边界、重复语境、零参与者、统计时间窗、HTML/JSON 口径以及持久化。2026年10月22日本轮执行结果为84项通过，无失败、跳过或警告，详见[后端审查与测试验收](../project-docs/后端审查与测试验收.md)。
 
-HTTP 实机演示流程为：启动服务 → 注册两名匿名参与者 → 为其中一人提交事件 → 查询单条事件与列表 → 重试同一事件 → 查看两人的统计 → 关闭服务。实际执行结果以本次交付报告为准。
+推荐演示顺序：创建匿名用户 A 的词条 → 为 A 提交复习 → 上报一条匿名行为事件 → 用用户 B 只上报行为 → 查询两个统计 JSON 地址 → 打开 HTML 报表核对 B 的零复习行 → 查询一个不存在的词条 → 提交非法评分观察422。演示仅使用合成数据。
 
-本次没有修改桌面端、PocketBase 或 FSRS，未验收真实桌面操作到 HTTP 的事件采集、账号映射或生产鉴权；不能把课程 HTTP 验证视为桌面端完整测试通过。
+本套验证不代表桌面端已自动采集事件，也不代表 PocketBase、FSRS、真实 AI 服务或整个桌面项目的测试已通过。

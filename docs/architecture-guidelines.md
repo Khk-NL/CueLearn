@@ -11,18 +11,20 @@
 ```text
 app/
   __init__.py
-  main.py               # 课程 API 入口骨架，待实现
-  models.py             # 课程请求与响应模型骨架，待实现
-  storage.py            # 课程存储与统计骨架，待实现
+  main.py               # 本机课程 API 与报表入口
+  models.py             # 课程请求、响应与匿名事件模型
+  storage.py            # SQLite 事务、业务存取与统计
   desktop/              # 原 src/，现有 Electron、React 及共享代码
     backend/
     fronted/
     common/
 tests/
-  test_api.py           # 课程 API 测试骨架，待实现
+  test_api.py           # 临时数据库中的 API 与统计验证
 ```
 
-当前完成的是源码落位与构建路径调整。Python 文件只有职责说明，尚未提供 API、SQL、事件采集或业务接入，不能仅凭目录结构视为课程后端已完成。现有桌面端仍通过受限 IPC 调用主进程并访问 PocketBase；课程 Python/SQL 要求与 PocketBase 的集成边界须先明确，避免建立两份相互矛盾的账号、复习状态或事件数据。
+截至2026-10-22，Python 课程服务已实现生词、复习、独立行为事件、LEFT JOIN 统计与 HTML 报表。它使用根目录 `learn.db` 进行可信本机演示，不替代、同步或修改 PocketBase；现有桌面端仍通过受限 IPC 调用主进程并访问 PocketBase，桌面操作到 `/events` 的自动采集尚未完成。接口边界和数据口径见[课程接口说明](course-api.md)。
+
+本轮在 uv 锁定环境、Python 3.12.14 下执行 `uv run pytest -v`，84项通过，用时3.91秒，无警告或跳过。测试使用独立临时 SQLite 与真实应用生命周期，不清空本机演示库；这不代表 Electron、PocketBase 或真实 AI 的完整验证已通过。详细结果见[后端审查与测试验收](../project-docs/后端审查与测试验收.md)。
 
 以下规则适用于 `app/desktop/` 中的 TypeScript 桌面端。后端主要运行在 Electron main 进程中。新增代码优先遵循下面的关系：
 
