@@ -248,13 +248,14 @@ const Word = ({word, original, lemma, pop, requestPop, show, alwaysDark, classNa
                 try {
                     const session = await learningApi.session();
                     if (session.account) {
-                    const file = useFile.getState();
-                    const sentence = usePlayer.getState().currentSentence;
-                        await learningApi.saveWord({ word: result.data.word, meaning: result.data.translate,
+                        const file = useFile.getState();
+                        const sentence = usePlayer.getState().currentSentence;
+                        const capture = await learningApi.saveWord({ word: result.data.word, meaning: result.data.translate,
                             videoId: file.videoId ?? undefined, mediaPath: file.videoPath ?? undefined,
                             subtitleHash: file.srtHash ?? undefined, sentenceIndex: sentence?.index,
                             startSeconds: sentence ? sentence.adjustedStart ?? sentence.start : undefined,
                             endSeconds: sentence ? sentence.adjustedEnd ?? sentence.end : undefined, sentence: sentence?.text });
+                        if (capture.status === 'failed') toast(tLearning('courseFavoriteCaptureFailed'), { icon: '⚠️' });
                     }
                 } catch (cause) {
                     toast.error(tLearning('syncFavoriteFailed', { error: cause instanceof Error ? cause.message : String(cause) }));

@@ -1,9 +1,10 @@
 import { inject, injectable } from 'inversify';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import TYPES from '@/backend/ioc/types';
-import { MAX_NOTEBOOK_SOURCES, type LearningAccount, type LearningContext, type LearningContextInput, type LearningNotebook, type LearningStats, type LearningWord, type NotebookSourceInput, type NotebookSourceRemoval, type ReviewRating, type NotebookCitation, type NotebookAnswer, type NotebookQuestion, type LearningNote, type LearningQuiz } from '@/common/contracts/learning';
+import { MAX_NOTEBOOK_SOURCES, type CourseCaptureResult, type LearningAccount, type LearningContext, type LearningContextInput, type LearningNotebook, type LearningStats, type LearningWord, type NotebookSourceInput, type NotebookSourceRemoval, type ReviewRating, type NotebookCitation, type NotebookAnswer, type NotebookQuestion, type LearningNote, type LearningQuiz } from '@/common/contracts/learning';
 import type WordsRepository from '@/backend/services/repositories/WordsRepository';
 import type WatchHistoryRepository from '@/backend/services/repositories/WatchHistoryRepository';
 import type WatchHistoryService from '@/backend/services/WatchHistoryService';
@@ -12,6 +13,7 @@ import type AiProviderService from '@/backend/services/AiProviderService';
 import { CLOUD_AI_NOT_CONFIGURED_MESSAGE } from '@/backend/services/AiProviderService';
 import PocketBaseClient, { type PbRecord } from '@/backend/infrastructure/learning/PocketBaseClient';
 import LocalLearningMedia from '@/backend/infrastructure/learning/LocalLearningMedia';
+import CourseCaptureClient, { type CourseCaptureScope } from '@/backend/infrastructure/learning/CourseCaptureClient';
 import { deriveReviewDue } from '@/backend/services/learning/reviewSchedule';
 import { concurrency } from '@/backend/utils/concurrency';
 
@@ -29,6 +31,9 @@ interface SourceRecord extends PbRecord { notebook: string; media_key: string; m
 interface NoteRecord extends PbRecord { notebook: string; kind: 'manual' | 'summary' | 'question'; content: string; citations: NotebookCitation[] }
 /** PocketBase 测验记录。 */
 interface QuizRecord extends PbRecord { notebook: string; questions: NotebookQuestion[]; answers: number[] | null }
+
+/** 捕获业务操作开始时的账号与采集配置，防止异步完成后归属改变。 */
+interface CaptureOperation { sourceUrl: string; ownerId: string; scope: CourseCaptureScope | null; configurationFailed: boolean }
 
 /** AI 按逐条论述返回现有字幕行号，正文引用由主进程重新编号。 */
 const answerSchema = z.object({ insufficient: z.boolean(), claims: z.array(z.object({
@@ -49,10 +54,13 @@ export default class LearningService {
         @inject(TYPES.WatchHistoryService) private readonly watchHistory: WatchHistoryService,
         @inject(TYPES.SubtitleService) private readonly subtitle: SubtitleService,
         @inject(TYPES.AiProviderService) private readonly ai: AiProviderService,
+        @inject(TYPES.CourseCaptureClient) private readonly course: CourseCaptureClient,
     ) {}
 
     /** 返回连接地址与当前登录账号。 */
-    public session(): { url: string; account: LearningAccount | null } { return { url: this.pb.getUrl(), account: this.pb.getAccount() }; }
+    public session(): { url: string; account: LearningAccount | null; courseUrl: string } { return { url: this.pb.getUrl(), account: this.pb.getAccount(), courseUrl: this.course.getUrl() }; }
+    /** 保存独立的本机课程采集地址；空值关闭采集。 */
+    public setCourseUrl(url: string): void { this.course.setUrl(url); }
     /** 修改 PocketBase 地址。 */
     public setUrl(url: string): void { this.pb.setUrl(url); }
     /** 注册普通账号。 */
@@ -91,19 +99,29 @@ export default class LearningService {
     }
 
     /** 在唯一键并发冲突后重查；其他写入失败保留原错误。 */
-    private async getOrCreateWord(word: string, meaning: string): Promise<{ record: WordRecord; created: boolean }> {
+    private async getOrCreateWord(word: string, meaning: string, operation?: CaptureOperation): Promise<{ record: WordRecord; created: boolean }> {
         const existing = await this.pb.findByField<WordRecord>('vocabulary_items', 'word', word);
+        if (operation) this.assertCaptureAccount(operation);
         if (existing) return { record: existing, created: false };
         try { return { record: await this.pb.create<WordRecord>('vocabulary_items', { word, meaning }), created: true }; }
         catch (cause) {
+            if (operation) this.assertCaptureAccount(operation);
             const concurrent = await this.pb.findByField<WordRecord>('vocabulary_items', 'word', word).catch(() => null);
+            if (operation) this.assertCaptureAccount(operation);
             if (concurrent) return { record: concurrent, created: false };
             throw cause;
         }
     }
 
-    /** 保存生词和可选的视频语境，重复词条只增加新的语境。 */
-    public async saveWord(input: LearningContextInput): Promise<void> {
+    /** 收藏成功后独立采集匿名快照；采集失败不会回滚收藏。 */
+    public async saveWord(input: LearningContextInput): Promise<CourseCaptureResult> {
+        const operation = this.startCapture();
+        const item = await this.persistWord(input, operation);
+        return this.captureCommitted(operation, item, 'word_saved', randomUUID(), new Date().toISOString());
+    }
+
+    /** 保存PocketBase词条与语境，采集由外层在业务成功后执行。 */
+    private async persistWord(input: LearningContextInput, operation: CaptureOperation): Promise<WordRecord> {
         const word = input.word.trim().toLowerCase();
         if (!word) throw new Error('单词不能为空');
         if (input.mediaPath && input.sentence) {
@@ -112,12 +130,15 @@ export default class LearningService {
                 input.startSeconds < 0 || input.endSeconds <= input.startSeconds ||
                 !Number.isInteger(input.sentenceIndex) || input.sentenceIndex < 0) throw new Error('字幕语境时间或序号无效');
         }
-        const { record: item } = await this.getOrCreateWord(word, typeof input.meaning === 'string' ? input.meaning.trim() : '');
-        if (!input.mediaPath || !input.sentence) return;
+        const { record: item } = await this.getOrCreateWord(word, typeof input.meaning === 'string' ? input.meaning.trim() : '', operation);
+        this.assertCaptureAccount(operation);
+        if (!input.mediaPath || !input.sentence) return item;
         const mediaKey = await this.media.fingerprint(input.mediaPath);
+        this.assertCaptureAccount(operation);
         this.media.remember(mediaKey, { mediaPath: input.mediaPath, videoId: input.videoId });
         const contexts = await this.pb.listByField<ContextRecord>('word_contexts', 'word_item', item.id);
-        if (contexts.some((context) => context.word_item === item.id && context.media_key === mediaKey && context.sentence_index === input.sentenceIndex)) return;
+        this.assertCaptureAccount(operation);
+        if (contexts.some((context) => context.word_item === item.id && context.media_key === mediaKey && context.sentence_index === input.sentenceIndex)) return item;
         try {
             await this.pb.create('word_contexts', {
                 word_item: item.id, media_key: mediaKey, media_title: input.mediaTitle ?? path.basename(input.mediaPath),
@@ -126,9 +147,10 @@ export default class LearningService {
             });
         } catch (cause) {
             const concurrent = await this.pb.listByField<ContextRecord>('word_contexts', 'word_item', item.id).catch(() => []);
-            if (concurrent.some((context) => context.word_item === item.id && context.media_key === mediaKey && context.sentence_index === input.sentenceIndex)) return;
+            if (concurrent.some((context) => context.word_item === item.id && context.media_key === mediaKey && context.sentence_index === input.sentenceIndex)) return item;
             throw cause;
         }
+        return item;
     }
 
     /** 取消收藏时删除当前账号中的对应词条及其关联语境、复习记录。 */
@@ -185,11 +207,51 @@ export default class LearningService {
         }));
     }
 
-    /** 对自己拥有的词写入一次复习事件。 */
-    public async review(wordId: string, rating: ReviewRating): Promise<void> {
+    /** 复习先保存至PocketBase，成功后将原子分析快照送至课程服务。 */
+    public async review(wordId: string, rating: ReviewRating, durationMs: number): Promise<CourseCaptureResult> {
         if (!['forgot', 'unsure', 'remembered'].includes(rating)) throw new Error('复习评分无效');
-        if (!(await this.pb.findByField<WordRecord>('vocabulary_items', 'id', wordId))) throw new Error('生词不存在');
-        await this.pb.create('review_events', { word_item: wordId, rating, reviewed_at: new Date().toISOString() });
+        if (!Number.isSafeInteger(durationMs) || durationMs < 0) throw new Error('复习作答时长无效');
+        const operation = this.startCapture();
+        const item = await this.pb.findByField<WordRecord>('vocabulary_items', 'id', wordId);
+        if (!item) throw new Error('生词不存在');
+        this.assertCaptureAccount(operation);
+        const reviewedAt = new Date().toISOString();
+        const event = await this.pb.create<ReviewRecord>('review_events', { word_item: wordId, rating, reviewed_at: reviewedAt });
+        return this.captureCommitted(operation, item, 'review_submitted', event.id, reviewedAt, rating, durationMs);
+    }
+
+    /** 读取一次账号与本机采集设置，配置异常保留为独立采集失败。 */
+    private startCapture(): CaptureOperation {
+        const account = this.pb.getAccount();
+        if (!account) throw new Error('请先登录学习账号');
+        const operation: CaptureOperation = { sourceUrl: this.pb.getUrl(), ownerId: account.id, scope: null, configurationFailed: false };
+        try { operation.scope = this.course.prepare(operation.sourceUrl, operation.ownerId); }
+        catch { operation.configurationFailed = true; }
+        return operation;
+    }
+
+    /** 在依赖账号的异步步骤之间显式检查归属，避免把操作归给另一个账号。 */
+    private assertCaptureAccount(operation: CaptureOperation): void {
+        if (this.pb.getUrl() !== operation.sourceUrl || this.pb.getAccount()?.id !== operation.ownerId) throw new Error('学习账号已切换，请重新操作');
+    }
+
+    /** 已提交业务的采集分支只返回状态，不将采集异常伪装为业务失败。 */
+    private async captureCommitted(operation: CaptureOperation, item: WordRecord, kind: 'word_saved' | 'review_submitted',
+        sourceId: string, occurredAt: string, rating?: ReviewRating, durationMs?: number): Promise<CourseCaptureResult> {
+        if (operation.configurationFailed) return { status: 'failed', reason: 'configuration' };
+        if (!operation.scope) return { status: 'disabled' };
+        try {
+            this.assertCaptureAccount(operation);
+            const contexts = await this.pb.listByField<ContextRecord>('word_contexts', 'word_item', item.id);
+            this.assertCaptureAccount(operation);
+            return await this.course.send(operation.scope, {
+                user_key: operation.scope.userKey, event_id: this.course.eventId(operation.scope, `${kind}:${sourceId}`),
+                event_type: kind, occurred_at: occurredAt, word: item.word, definition: item.meaning,
+                contexts: contexts.map((context) => ({ sentence: context.sentence, media_fingerprint: context.media_key,
+                    subtitle_index: context.sentence_index, start_seconds: context.start_seconds })),
+                ...(rating === undefined ? {} : { rating: this.course.rating(rating), duration_ms: durationMs }),
+            });
+        } catch { return { status: 'failed', reason: 'snapshot_or_account' }; }
     }
 
     /** 计算当前账号的到期数量、今日完成量和近期记得比例。 */

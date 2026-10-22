@@ -91,6 +91,7 @@ import VocabularyController from '@/backend/controllers/VocabularyController';
 import LearningController from '@/backend/controllers/LearningController';
 import LearningService from '@/backend/services/LearningService';
 import PocketBaseClient from '@/backend/infrastructure/learning/PocketBaseClient';
+import CourseCaptureClient from '@/backend/infrastructure/learning/CourseCaptureClient';
 import LocalLearningMedia from '@/backend/infrastructure/learning/LocalLearningMedia';
 import VocabularyService, { VocabularyServiceImpl } from '@/backend/services/VocabularyService';
 import SentenceVocabularyService, { SentenceVocabularyServiceImpl } from '@/backend/services/SentenceVocabularyService';
@@ -259,6 +260,7 @@ container.bind<TranscriptionService>(TYPES.LocalTranscriptionService).to(LocalTr
 container.bind<WordMatchService>(TYPES.WordMatchService).to(WordMatchServiceImpl).inSingletonScope();
 container.bind<VocabularyService>(TYPES.VocabularyService).to(VocabularyServiceImpl).inSingletonScope();
 container.bind<PocketBaseClient>(TYPES.PocketBaseClient).to(PocketBaseClient).inSingletonScope();
+container.bind<CourseCaptureClient>(TYPES.CourseCaptureClient).to(CourseCaptureClient).inSingletonScope();
 container.bind<LocalLearningMedia>(TYPES.LocalLearningMedia).to(LocalLearningMedia).inSingletonScope();
 container.bind<LearningService>(TYPES.LearningService).to(LearningService).inSingletonScope();
 container.bind<SentenceVocabularyService>(TYPES.SentenceVocabularyService).to(SentenceVocabularyServiceImpl).inSingletonScope();

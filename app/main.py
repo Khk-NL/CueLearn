@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from html import escape
 
-from fastapi import FastAPI, HTTPException, Path, Query, Request, status
+from fastapi import FastAPI, HTTPException, Path, Query, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 
@@ -22,6 +22,8 @@ from app.models import (
     USER_KEY_PATTERN,
     SQLITE_MAX_INTEGER,
     HealthResponse,
+    DesktopCaptureCreate,
+    DesktopCaptureResponse,
     LearningEventCreate,
     LearningEventResponse,
     MessageResponse,
@@ -178,6 +180,24 @@ def create_learning_event(payload: LearningEventCreate):
         target_id=payload.target_id,
         payload=payload.payload,
     )
+
+
+@app.post(
+    "/desktop/captures",
+    tags=["桌面采集"],
+    summary="原子采集已成功提交的桌面收藏或复习",
+    status_code=status.HTTP_201_CREATED,
+    response_model=DesktopCaptureResponse,
+)
+def capture_desktop_event(payload: DesktopCaptureCreate, response: Response):
+    """首次写入201；相同规范内容重试200；同键不同内容409且无副作用。"""
+    try:
+        receipt, created = storage.capture_desktop_event(payload.model_dump(mode="json"))
+    except storage.DesktopCaptureConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    if not created:
+        response.status_code = status.HTTP_200_OK
+    return receipt
 
 
 @app.get(

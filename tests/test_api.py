@@ -762,3 +762,200 @@ def test_invalid_review_query_returns_422(client: TestClient, params: dict):
     response = client.get("/review_events", params=params)
     assert response.status_code == 422
     assert response.json()["detail"][0]["loc"] == ["query", "user_key"]
+
+
+def _capture_body(event_type: str = "word_saved", event_id: str = "a" * 64, user_key: str = "anon-desktop") -> dict:
+    """生成一份PB业务成功后应发送的匿名桌面快照，不包含真实账号信息。"""
+    payload = {
+        "user_key": user_key, "event_id": event_id, "event_type": event_type,
+        "occurred_at": datetime.now().astimezone().isoformat(timespec="microseconds"),
+        "word": "context", "definition": "真实语境",
+        "contexts": [{"sentence": "Keep the word in context.", "media_fingerprint": "demo-hash", "subtitle_index": 3, "start_seconds": 12.5}],
+    }
+    if event_type == "review_submitted":
+        payload |= {"rating": "remembered", "duration_ms": 1800}
+    return payload
+
+
+def _capture_counts() -> dict[str, int]:
+    """从真实临时库统计原子采集涉及的各张表。"""
+    tables = ["users", "vocabulary_items", "word_contexts", "review_events", "learning_events", "desktop_captures"]
+    with closing(sqlite3.connect(storage.DB_PATH)) as connection:
+        return {table: connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in tables}
+
+
+def test_desktop_word_review_and_event_only_user_reach_report(client: TestClient):
+    """收藏、复习到统计闭环真实落库，只有通用事件的人仍保留零复习行。"""
+    saved = client.post("/desktop/captures", json=_capture_body())
+    assert saved.status_code == 201
+    word_receipt = saved.json()
+    assert word_receipt["review_event_id"] is None
+    reviewed = client.post("/desktop/captures", json=_capture_body("review_submitted", "b" * 64))
+    assert reviewed.status_code == 201
+    receipt = reviewed.json()
+    assert receipt["vocabulary_item_id"] == word_receipt["vocabulary_item_id"]
+    assert receipt["review_event_id"] is not None
+    assert storage.get_learning_event(receipt["learning_event_id"])["event_type"] == "review_submitted"
+    assert client.post("/events", json=_event_body()).status_code == 201
+    report = {row["user_key"]: row for row in client.get("/reports/overview").json()["rows"]}
+    assert report["anon-desktop"]["vocabulary_count"] == 1
+    assert report["anon-desktop"]["review_count"] == 1
+    assert report["anon-desktop"]["today_completed"] == 1
+    assert report["anon-desktop"]["avg_duration_ms"] == 1800
+    assert report["anon-desktop"]["remembered_ratio_7d"] == 1.0
+    assert report["anon-event"]["review_count"] == 0
+    assert report["anon-event"]["avg_duration_ms"] is None
+    assert len(client.get(f"/vocabulary_items/{receipt['vocabulary_item_id']}").json()["contexts"]) == 1
+
+
+@pytest.mark.parametrize("event_type", ["word_saved", "review_submitted"])
+def test_desktop_retries_reuse_the_complete_receipt(client: TestClient, event_type: str):
+    """同键同内容重试返回200及原收据，不重复写任何业务记录。"""
+    body = _capture_body(event_type)
+    first = client.post("/desktop/captures", json=body)
+    before = _capture_counts()
+    repeated = client.post("/desktop/captures", json=body)
+    assert first.status_code == 201
+    assert repeated.status_code == 200
+    assert repeated.json() == first.json()
+    assert _capture_counts() == before
+    assert before["learning_events"] == before["desktop_captures"] == 1
+    assert before["review_events"] == int(event_type == "review_submitted")
+
+
+@pytest.mark.parametrize(("field", "value"), [("word", "different"), ("definition", "其他释义"), ("rating", "forgot"), ("duration_ms", 1801), ("contexts", [])])
+def test_desktop_conflict_returns_409_without_side_effects(client: TestClient, field: str, value):
+    """已接受的幂等键不能改写内容或先追加语境再报冲突。"""
+    body = _capture_body("review_submitted")
+    first = client.post("/desktop/captures", json=body)
+    assert first.status_code == 201
+    before = _capture_counts()
+    response = client.post("/desktop/captures", json=body | {field: value})
+    assert response.status_code == 409
+    assert "event_id" in response.json()["detail"]
+    assert _capture_counts() == before
+    assert storage.list_review_events(body["user_key"])[0]["rating"] == "remembered"
+
+
+def test_desktop_same_event_key_is_independent_between_users(client: TestClient):
+    """不同匿名用户可以独立使用同一事件键，词条和复习各自保存。"""
+    first = client.post("/desktop/captures", json=_capture_body("review_submitted", user_key="anon-first"))
+    second = client.post("/desktop/captures", json=_capture_body("review_submitted", user_key="anon-second"))
+    assert first.status_code == second.status_code == 201
+    assert first.json()["vocabulary_item_id"] != second.json()["vocabulary_item_id"]
+    assert len(storage.list_review_events("anon-first")) == len(storage.list_review_events("anon-second")) == 1
+    assert _capture_counts()["desktop_captures"] == 2
+
+
+def test_desktop_imported_word_needs_no_fabricated_context(client: TestClient):
+    """没有原句和释义的旧词也能采集复习，不为满足模型编造资料。"""
+    body = _capture_body("review_submitted") | {"definition": "", "contexts": [], "duration_ms": 0}
+    response = client.post("/desktop/captures", json=body)
+    assert response.status_code == 201
+    word = client.get(f"/vocabulary_items/{response.json()['vocabulary_item_id']}").json()
+    assert word["definition"] == ""
+    assert word["contexts"] == []
+    assert storage.list_review_events(body["user_key"])[0]["duration_ms"] == 0
+
+
+def test_desktop_timezone_equivalent_retry_is_the_same_event(client: TestClient):
+    """同一时刻的不同合法时区表达不会被误判为内容冲突。"""
+    body = _capture_body("review_submitted") | {"occurred_at": "2026-10-22T08:30:00+08:00"}
+    first = client.post("/desktop/captures", json=body)
+    second = client.post("/desktop/captures", json=body | {"occurred_at": "2026-10-22T00:30:00Z"})
+    assert first.status_code == 201
+    assert second.status_code == 200
+    assert second.json() == first.json()
+    assert _capture_counts()["review_events"] == 1
+
+
+def test_desktop_occurrence_time_preserves_report_history(client: TestClient):
+    """迟到采集按原提交时间入报表，不把历史复习计为今日完成。"""
+    occurred = datetime.now().astimezone().replace(microsecond=123456) - timedelta(days=8)
+    body = _capture_body("review_submitted") | {"occurred_at": occurred.isoformat()}
+    response = client.post("/desktop/captures", json=body)
+    assert response.status_code == 201
+    review = storage.list_review_events(body["user_key"])[0]
+    assert review["reviewed_at"] == occurred.replace(tzinfo=None).isoformat(timespec="microseconds")
+    assert storage.get_learning_event(response.json()["learning_event_id"])["created_at"] == review["reviewed_at"]
+    row = client.get("/reports/overview").json()["rows"][0]
+    assert row["review_count"] == 1
+    assert row["today_completed"] == 0
+    assert row["remembered_ratio_7d"] is None
+    assert row["avg_duration_ms"] == 1800
+
+
+@pytest.mark.parametrize("occurred_at", ["2026-10-22T08:00:00", "not-a-date", 1792627200, "1792627200", None])
+def test_desktop_invalid_occurrence_time_returns_422(client: TestClient, occurred_at):
+    """原提交时间必须是带时区的ISO字符串。"""
+    assert client.post("/desktop/captures", json=_capture_body() | {"occurred_at": occurred_at}).status_code == 422
+    assert all(count == 0 for count in _capture_counts().values())
+
+
+@pytest.mark.parametrize("event_id", ["", "a" * 63, "A" * 64, "g" * 64, "a" * 65])
+def test_desktop_invalid_event_key_returns_422(client: TestClient, event_id: str):
+    """幂等键只接受64位小写十六进制，不接受原始账号或事件标识。"""
+    assert client.post("/desktop/captures", json=_capture_body(event_id=event_id)).status_code == 422
+
+
+@pytest.mark.parametrize("duration_ms", [None, True, 1.0, "1000", -1, 2**53])
+def test_desktop_invalid_duration_returns_422(client: TestClient, duration_ms):
+    """桌面计时必须是JavaScript安全范围内的非负JSON整数。"""
+    body = _capture_body("review_submitted") | {"duration_ms": duration_ms}
+    assert client.post("/desktop/captures", json=body).status_code == 422
+    assert all(count == 0 for count in _capture_counts().values())
+
+
+@pytest.mark.parametrize(("event_type", "field"), [("review_submitted", "rating"), ("review_submitted", "duration_ms"), ("word_saved", "occurred_at"), ("word_saved", "word"), ("word_saved", "contexts")])
+def test_desktop_missing_fields_return_422(client: TestClient, event_type: str, field: str):
+    """缺少原始业务字段时不接受不完整采集。"""
+    body = _capture_body(event_type)
+    del body[field]
+    assert client.post("/desktop/captures", json=body).status_code == 422
+
+
+@pytest.mark.parametrize("extra", [{"rating": "forgot"}, {"rating": None}, {"duration_ms": 1}, {"duration_ms": None}, {"email": "synthetic@example.invalid"}])
+def test_desktop_word_capture_rejects_review_and_extra_fields(client: TestClient, extra: dict):
+    """收藏不得夹带评分字段，额外个人信息字段同样拒绝。"""
+    assert client.post("/desktop/captures", json=_capture_body() | extra).status_code == 422
+
+
+def test_desktop_atomic_failure_rolls_back_and_can_retry(client: TestClient):
+    """最后写收据失败时，用户、词条、语境、评分和事件全部回滚。"""
+    with closing(sqlite3.connect(storage.DB_PATH)) as connection, connection:
+        connection.execute("CREATE TRIGGER reject_capture BEFORE INSERT ON desktop_captures BEGIN SELECT RAISE(ABORT, 'synthetic receipt failure'); END")
+    body = _capture_body("review_submitted")
+    with TestClient(app, raise_server_exceptions=False) as failing:
+        assert failing.post("/desktop/captures", json=body).status_code == 500
+    assert all(count == 0 for count in _capture_counts().values())
+    with closing(sqlite3.connect(storage.DB_PATH)) as connection, connection:
+        connection.execute("DROP TRIGGER reject_capture")
+    assert client.post("/desktop/captures", json=body).status_code == 201
+    assert _capture_counts()["review_events"] == 1
+
+
+def test_desktop_concurrent_retries_count_once(client: TestClient):
+    """同键并发采集由同一事务收据去重，只允许一次新建。"""
+    from concurrent.futures import ThreadPoolExecutor
+
+    body = _capture_body("review_submitted")
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        responses = list(pool.map(lambda _: client.post("/desktop/captures", json=body), range(8)))
+    assert sorted(response.status_code for response in responses) == [200] * 7 + [201]
+    assert all(response.json() == responses[0].json() for response in responses)
+    counts = _capture_counts()
+    assert counts["review_events"] == counts["learning_events"] == counts["desktop_captures"] == 1
+
+
+def test_desktop_receipt_survives_restart(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """应用重启后仍识别已采集事件，重试不增加复习次数。"""
+    monkeypatch.setattr(storage, "DB_PATH", tmp_path / "capture-restart.db")
+    body = _capture_body("review_submitted")
+    with TestClient(app) as first:
+        receipt = first.post("/desktop/captures", json=body)
+        assert receipt.status_code == 201
+    with TestClient(app) as second:
+        repeated = second.post("/desktop/captures", json=body)
+        assert repeated.status_code == 200
+        assert repeated.json() == receipt.json()
+        assert second.get("/reports/overview").json()["rows"][0]["review_count"] == 1

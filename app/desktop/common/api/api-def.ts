@@ -62,7 +62,7 @@ import { ModelInstallationStatusVO } from '@/common/types/vo/model-installation-
 import { VideoInfo } from '@/common/types/video-info';
 import { StorageStatusVO } from '@/common/types/vo/StorageStatusVO';
 import { TranscriptTask } from '@/common/contracts/transcript/transcript-task';
-import type { LearningAccount, LearningContextInput, LearningNotebook, LearningStats, LearningWord, NotebookSourceInput, NotebookSourceRemoval, ReviewRating, NotebookAnswer, LearningQuiz, LearningNote } from '@/common/contracts/learning';
+import type { CourseCaptureResult, LearningAccount, LearningContextInput, LearningNotebook, LearningStats, LearningWord, NotebookSourceInput, NotebookSourceRemoval, ReviewRating, NotebookAnswer, LearningQuiz, LearningNote } from '@/common/contracts/learning';
 
 /** 跨进程请求与返回值契约。 */
 interface ApiDefinition {
@@ -453,17 +453,18 @@ interface VideoLearningDef {
 
 /** 视频语境学习的跨进程接口。 */
 interface LearningDef {
-    'learning/session': { params: void; return: { url: string; account: LearningAccount | null } };
+    'learning/session': { params: void; return: { url: string; account: LearningAccount | null; courseUrl: string } };
+    'learning/course/server/set': { params: { url: string }; return: void };
     'learning/server/set': { params: { url: string }; return: void };
     'learning/register': { params: { email: string; password: string }; return: void };
     'learning/login': { params: { email: string; password: string }; return: LearningAccount };
     'learning/logout': { params: void; return: void };
     'learning/import-local': { params: void; return: { imported: number; existed: number } };
-    'learning/word/save': { params: LearningContextInput; return: void };
+    'learning/word/save': { params: LearningContextInput; return: CourseCaptureResult };
     'learning/word/delete': { params: { word: string }; return: void };
     'learning/words': { params: void; return: LearningWord[] };
     'learning/overview': { params: void; return: { words: LearningWord[]; stats: LearningStats } };
-    'learning/review': { params: { wordId: string; rating: ReviewRating }; return: void };
+    'learning/review': { params: { wordId: string; rating: ReviewRating; durationMs: number }; return: CourseCaptureResult };
     'learning/stats': { params: void; return: LearningStats };
     'learning/notebooks': { params: void; return: LearningNotebook[] };
     'learning/notebook/create': { params: { title: string }; return: string };

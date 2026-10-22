@@ -14,6 +14,7 @@ export default class LearningController implements Controller {
     public registerRoutes(): void {
         registerRoute('learning/session', async () => this.learning.session());
         registerRoute('learning/server/set', async ({ url }) => this.learning.setUrl(url));
+        registerRoute('learning/course/server/set', async ({ url }) => this.learning.setCourseUrl(url));
         registerRoute('learning/register', ({ email, password }) => this.learning.register(email, password));
         registerRoute('learning/login', ({ email, password }) => this.learning.login(email, password));
         registerRoute('learning/logout', async () => this.learning.logout());
@@ -22,7 +23,7 @@ export default class LearningController implements Controller {
         registerRoute('learning/word/delete', ({ word }) => this.learning.deleteWord(word));
         registerRoute('learning/words', () => this.learning.words());
         registerRoute('learning/overview', () => this.learning.overview());
-        registerRoute('learning/review', ({ wordId, rating }) => this.learning.review(wordId, rating));
+        registerRoute('learning/review', ({ wordId, rating, durationMs }) => this.learning.review(wordId, rating, durationMs));
         registerRoute('learning/stats', () => this.learning.stats());
         registerRoute('learning/notebooks', () => this.learning.notebooks());
         registerRoute('learning/notebook/create', ({ title }) => this.learning.createNotebook(title));

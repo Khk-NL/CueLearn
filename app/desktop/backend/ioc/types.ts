@@ -38,6 +38,7 @@ const TYPES = {
     VocabularyService: Symbol('VocabularyService'),
     LearningService: Symbol('LearningService'),
     PocketBaseClient: Symbol('PocketBaseClient'),
+    CourseCaptureClient: Symbol('CourseCaptureClient'),
     LocalLearningMedia: Symbol('LocalLearningMedia'),
     SentenceVocabularyService: Symbol('SentenceVocabularyService'),
     RendererGateway: Symbol('RendererGateway'),

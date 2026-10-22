@@ -39,6 +39,12 @@ export interface LearningWord {
 /** 复习反馈的三个等级。 */
 export type ReviewRating = 'forgot' | 'unsure' | 'remembered';
 
+/** 主业务保存后的独立课程采集结果；失败不代表收藏或复习保存失败。 */
+export interface CourseCaptureResult {
+    status: 'disabled' | 'captured' | 'failed';
+    reason?: string;
+}
+
 /** 单个笔记本允许关联的视频数量。 */
 export const MAX_NOTEBOOK_SOURCES = 5;
 

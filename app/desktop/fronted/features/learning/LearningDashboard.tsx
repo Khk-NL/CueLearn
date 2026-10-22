@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { MAX_NOTEBOOK_SOURCES, type LearningAccount, LearningNotebook, LearningNote, LearningQuiz, LearningStats, LearningWord, NotebookCitation } from '@/common/contracts/learning';
 import type WatchHistoryVO from '@/common/types/WatchHistoryVO';
 import { fileBrowserApi } from '@/fronted/features/file-browser/fileBrowserApi';
+import { settingsApi } from '@/fronted/features/settings/settingsApi';
 import { learningApi } from './learningApi';
 import ReviewCard from './ReviewCard';
 import CitedNote from './CitedNote';
@@ -17,6 +18,8 @@ export default function LearningDashboard() {
     const navigate = useNavigate();
     const { t } = useTranslation('learning');
     const [url, setUrl] = useState('');
+    const [courseUrl, setCourseUrl] = useState('');
+    const [savedCourseUrl, setSavedCourseUrl] = useState('');
     const [account, setAccount] = useState<LearningAccount | null>(null);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -64,6 +67,7 @@ export default function LearningDashboard() {
         learningApi.session().then(async (session) => {
             if (!active) return;
             setUrl(session.url); setAccount(session.account);
+            setCourseUrl(session.courseUrl); setSavedCourseUrl(session.courseUrl);
             await refresh(session.account);
         }).catch((cause) => { if (active) setError(message(cause)); });
         return () => { active = false; };
@@ -130,12 +134,29 @@ export default function LearningDashboard() {
             {account ? <div className="flex items-center gap-3"><span>{t('signedIn', { email: account.email })}</span><button className="rounded border px-3 py-2" disabled={busy} onClick={() => void run(async () => { await learningApi.logout(); setAccount(null); await refresh(null); })}>{t('signOut')}</button><button className="rounded border px-3 py-2" disabled={busy} onClick={() => { if (window.confirm(t('importAgainPrompt'))) void run(async () => { const result = await learningApi.importLocal(); toast.success(t('importShortResult', { count: result.imported })); await refresh(account); }); }}>{t('importWords')}</button></div>
                 : <div className="space-y-2"><div className="flex gap-2"><input aria-label={t('email')} type="email" className="min-w-0 flex-1 rounded border bg-background p-2" placeholder={t('email')} value={email} onChange={(event) => setEmail(event.target.value)} /><input aria-label={t('password')} type="password" className="min-w-0 flex-1 rounded border bg-background p-2" placeholder={t('password')} value={password} onChange={(event) => setPassword(event.target.value)} /></div><div className="flex gap-2"><button className="rounded bg-primary px-3 py-2 text-primary-foreground" disabled={busy} onClick={() => void signIn(false)}>{t('signIn')}</button><button className="rounded border px-3 py-2" disabled={busy} onClick={() => void signIn(true)}>{t('registerAndSignIn')}</button></div></div>}
         </section>
+        <section className="rounded-xl border p-4 space-y-3">
+            <label className="block text-sm">{t('courseServerAddress')}<input className="mt-1 w-full rounded border bg-background p-2" value={courseUrl} onChange={(event) => setCourseUrl(event.target.value)} placeholder="http://127.0.0.1:8011" disabled={busy} /></label>
+            <p className="text-sm text-muted-foreground">{t('courseCollectionHint')}</p>
+            <div className="flex flex-wrap gap-2">
+                <button className="rounded border px-3 py-2" disabled={busy} onClick={() => void run(async () => {
+                    await learningApi.setCourseServer(courseUrl);
+                    const session = await learningApi.session();
+                    setCourseUrl(session.courseUrl); setSavedCourseUrl(session.courseUrl);
+                    toast.success(t(session.courseUrl ? 'courseCollectionEnabled' : 'courseCollectionDisabled'));
+                })}>{t('saveCourseAddress')}</button>
+                {savedCourseUrl && <button className="rounded border px-3 py-2" disabled={busy} onClick={() => void run(() => settingsApi.openUrl(`${savedCourseUrl}/report`))}>{t('viewCourseReport')}</button>}
+            </div>
+        </section>
         {account && <><nav className="flex gap-2"><button className="rounded border px-4 py-2" aria-current={tab === 'review' ? 'page' : undefined} onClick={() => setTab('review')}>{t('review')}</button><button className="rounded border px-4 py-2" aria-current={tab === 'notebook' ? 'page' : undefined} onClick={() => setTab('notebook')}>{t('notebook')}</button></nav>
             {tab === 'review' ? <section className="space-y-4"><p>{t('reviewStats', { due: due.length, completed: stats?.completedToday ?? 0, rate: Math.round((stats?.recentRememberedRate ?? 0) * 100) })}</p>
                 {due.length === 0 && <p className="text-muted-foreground">{t('noDue')}</p>}
                 {due.slice(0, 1).map((word) => <ReviewCard key={word.id} word={word} busy={busy}
                     onPlay={openCitation}
-                    onRate={(rating) => run(async () => { await learningApi.review(word.id, rating); await refresh(account); })} />)}
+                    onRate={(rating, durationMs) => run(async () => {
+                        const capture = await learningApi.review(word.id, rating, durationMs);
+                        if (capture.status === 'failed') toast(t('courseReviewCaptureFailed'), { icon: '⚠️' });
+                        await refresh(account);
+                    })} />)}
             </section> : <section className="space-y-4"><div className="flex gap-2"><input className="flex-1 rounded border bg-background p-2" aria-label={t('newNotebook')} placeholder={t('newNotebook')} value={title} onChange={(event) => setTitle(event.target.value)} /><button className="rounded bg-primary px-3 py-2 text-primary-foreground" disabled={busy} onClick={() => void run(async () => { const id = await learningApi.createNotebook(title); setTitle(''); await refresh(account); setSelectedBook(id); })}>{t('create')}</button></div>
                 <select aria-label={t('selectNotebook')} className="w-full rounded border bg-background p-2" value={selectedBook} onChange={(event) => setSelectedBook(event.target.value)}><option value="">{t('selectNotebook')}</option>{books.map((item) => <option value={item.id} key={item.id}>{item.title}</option>)}</select>
                 {book && <><div className="rounded-xl border p-4 space-y-2"><h2 className="font-semibold">{t('sources', { count: MAX_NOTEBOOK_SOURCES })}</h2>{book.sources.map((source) => <div key={source.id} className="flex items-center justify-between gap-3"><p>{source.mediaTitle} · {source.available ? t('available') : t('missingMedia')}</p><button type="button" className="rounded border px-2 py-1" aria-label={t('removeSource', { title: source.mediaTitle })} disabled={busy} onClick={() => void run(async () => { await learningApi.removeSource({ notebookId: book.id, sourceId: source.id }); await refresh(account); })}>{t('remove')}</button></div>)}<div className="flex gap-2"><select aria-label={t('selectVideo')} className="flex-1 rounded border bg-background p-2" value={selectedVideo} onChange={(event) => setSelectedVideo(event.target.value)}><option value="">{t('selectExistingVideo')}</option>{history.map((video) => <option value={video.id} key={video.id}>{video.displayFileName || video.fileName}</option>)}</select><button className="rounded border px-3 py-2" disabled={busy || !selectedVideo || book.sources.length >= MAX_NOTEBOOK_SOURCES} onClick={() => void run(async () => { await learningApi.addSource({ notebookId: book.id, videoId: selectedVideo }); await refresh(account); })}>{t('addSource')}</button></div></div>

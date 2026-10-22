@@ -6,10 +6,11 @@ CueLearn 学习数据模型（Pydantic v2）。
 """
 
 import json
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # 匿名标识仅约束格式，调用方仍须避免把真实姓名等个人信息当作标识。
 USER_KEY_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
@@ -216,6 +217,75 @@ class LearningEventResponse(BaseModel):
     target_id: str
     payload: str
     created_at: str
+
+
+class DesktopCaptureCreate(BaseModel):
+    """PB业务成功后的匿名采集快照；旧词允许没有真实语境或释义。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    user_key: str = Field(pattern=USER_KEY_PATTERN)
+    event_id: str = Field(pattern=r"^[0-9a-f]{64}$", description="桌面端派生的匿名幂等标识")
+    event_type: Literal["word_saved", "review_submitted"]
+    occurred_at: AwareDatetime = Field(description="带时区的实际提交时间")
+    word: str = Field(min_length=1, max_length=80)
+    definition: str = Field(min_length=0, max_length=500)
+    contexts: list[WordContextCreate]
+    rating: ReviewRating | None = None
+    duration_ms: int | None = Field(default=None, strict=True, ge=0, le=2**53 - 1)
+
+    @field_validator("word")
+    @classmethod
+    def normalize_word(cls, value: str) -> str:
+        """去除首尾空白后仍必须有真实词形。"""
+        value = value.strip()
+        if not value:
+            raise ValueError("单词不能为空")
+        return value
+
+    @field_validator("definition")
+    @classmethod
+    def normalize_definition(cls, value: str) -> str:
+        """保留确实缺失释义的旧词，不为采集编造释义。"""
+        return value.strip()
+
+    @field_validator("occurred_at", mode="before")
+    @classmethod
+    def require_iso_datetime(cls, value: object) -> object:
+        """只接受日期字符串，拒绝数字或数字字符串时间戳。"""
+        if not isinstance(value, str) or "T" not in value:
+            raise ValueError("occurred_at 必须是带时区的ISO日期字符串")
+        return value
+
+    @field_validator("occurred_at")
+    @classmethod
+    def normalize_occurred_at(cls, value: datetime) -> datetime:
+        """统一为UTC，使等价时区表示重试同一条收据。"""
+        try:
+            normalized = value.astimezone(timezone.utc)
+            normalized.astimezone()
+            return normalized
+        except (OverflowError, ValueError) as exc:
+            raise ValueError("occurred_at 超出本机可表示的日期范围") from exc
+
+    @model_validator(mode="after")
+    def validate_event_fields(self) -> Self:
+        """复习必须有评分和真实时长；收藏不能夹带复习字段。"""
+        if self.event_type == "review_submitted":
+            if self.rating is None or self.duration_ms is None:
+                raise ValueError("复习采集必须提供 rating 和 duration_ms")
+        elif {"rating", "duration_ms"} & self.model_fields_set:
+            raise ValueError("收藏采集不得提供 rating 或 duration_ms")
+        return self
+
+
+class DesktopCaptureResponse(BaseModel):
+    """一次原子采集的收据；相同事件重试返回原记录标识。"""
+
+    event_id: str
+    vocabulary_item_id: int
+    learning_event_id: int
+    review_event_id: int | None
 
 
 class UserOverviewRow(BaseModel):

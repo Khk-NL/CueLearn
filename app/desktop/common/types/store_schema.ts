@@ -56,5 +56,7 @@ export const SettingKeyObj = {
     'proxy.bypass_rules': '',
     'learning.pocketBaseUrl': 'http://127.0.0.1:8090',
     'learning.mediaPaths': '{}',
+    'learning.courseApiUrl': '',
+    'learning.courseAnonymousIds': '{}',
 }
 export type SettingKey = keyof typeof SettingKeyObj;

@@ -161,12 +161,13 @@ export default function LearningPage() {
             try {
                 const session = await learningApi.session();
                 if (session.account) {
-                const file = useFile.getState();
-                    await learningApi.saveWord({ word: result.data.word, meaning: result.data.translate, videoId: file.videoId ?? undefined,
+                    const file = useFile.getState();
+                    const capture = await learningApi.saveWord({ word: result.data.word, meaning: result.data.translate, videoId: file.videoId ?? undefined,
                         mediaPath: file.videoPath ?? undefined, subtitleHash: file.srtHash ?? undefined,
                         sentenceIndex: topicLine?.index,
                         startSeconds: topicLine ? topicLine.adjustedStart ?? topicLine.start : undefined,
                         endSeconds: topicLine ? topicLine.adjustedEnd ?? topicLine.end : undefined, sentence: topicLine?.text });
+                    if (capture.status === 'failed') toast(tLearning('courseFavoriteCaptureFailed'), { icon: '⚠️' });
                 }
             } catch (cause) {
                 toast.error(tLearning('syncFavoriteFailed', { error: cause instanceof Error ? cause.message : String(cause) }));

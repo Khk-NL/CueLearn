@@ -7,6 +7,8 @@ export const learningApi = {
     session: () => backendClient.call('learning/session'),
     /** 保存 PocketBase 地址并退出旧账号。 */
     setServer: (url: string) => backendClient.call('learning/server/set', { url }),
+    /** 保存课程本机采集地址，空字符串关闭采集。 */
+    setCourseServer: (url: string) => backendClient.call('learning/course/server/set', { url }),
     /** 注册普通学习账号。 */
     register: (email: string, password: string) => backendClient.call('learning/register', { email, password }),
     /** 登录学习账号。 */
@@ -24,7 +26,7 @@ export const learningApi = {
     /** 一次读取学习首页需要的词表与统计。 */
     overview: () => backendClient.call('learning/overview'),
     /** 提交一次复习评分。 */
-    review: (wordId: string, rating: ReviewRating) => backendClient.call('learning/review', { wordId, rating }),
+    review: (wordId: string, rating: ReviewRating, durationMs: number) => backendClient.call('learning/review', { wordId, rating, durationMs }),
     /** 读取今日和近期复习统计。 */
     stats: () => backendClient.call('learning/stats'),
     /** 读取笔记本及资料状态。 */
