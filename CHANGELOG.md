@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## [6.13.0](https://github.com/Khk-NL/CueLearn/compare/v6.12.5...v6.13.0) (2026-10-22)
+
+
+### Features
+
+* connect desktop learning actions to atomic course capture ([af221c8](https://github.com/Khk-NL/CueLearn/commit/af221c8137b94068d7ddc15c2543ccb591052fa2))
+* **models:** 收紧复习与事件模型的输入边界 ([406b045](https://github.com/Khk-NL/CueLearn/commit/406b045693d1385abf306ae2a10fbe5fb3e37a39))
+
+
+### Bug Fixes
+
+* add verified Windows desktop startup launcher ([5f9c168](https://github.com/Khk-NL/CueLearn/commit/5f9c16884badeda9662ffc5c4e10e268efc3c50c))
+* validate course API requests and isolate acceptance tests ([45bc6b9](https://github.com/Khk-NL/CueLearn/commit/45bc6b95891f0fc7a83ec87e89ae594dde60a189))
+
 ## [6.12.5](https://github.com/Khk-NL/CueLearn/compare/v6.12.6...v6.12.5) (2026-10-20)
 
 
