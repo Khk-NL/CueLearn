@@ -8,6 +8,8 @@ review_events、learning_events。
 """
 
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -20,12 +22,17 @@ def _now() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
 
-def _connect() -> sqlite3.Connection:
-    """每次操作单独连接。row_factory 让结果能按列名读取。"""
+@contextmanager
+def _connect() -> Iterator[sqlite3.Connection]:
+    """为一次操作提供事务连接，提交或回滚后关闭；初始化失败时也释放连接。"""
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+    try:
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def init_db() -> None:
@@ -174,7 +181,8 @@ def save_vocabulary_item(
     """
     保存生词，并写入这次带来的语境。
 
-    同一用户的同一个单词已存在时，不新建词条、不改释义，只追加语境。
+    同一用户的同一个单词已存在时，不新建词条、不改释义，只追加不同语境。
+    句子、媒体指纹、字幕序号和起始秒数均相同的语境不重复新增。
     """
     now = _now()
     with _connect() as conn:
@@ -199,19 +207,29 @@ def save_vocabulary_item(
         else:
             item_id = existing["id"]
         for ctx in contexts:
+            context_values = (
+                item_id,
+                ctx["sentence"],
+                ctx["media_fingerprint"],
+                ctx["subtitle_index"],
+                ctx["start_seconds"],
+            )
             conn.execute(
                 """
                 INSERT INTO word_contexts (
                     vocabulary_item_id, sentence, media_fingerprint, subtitle_index, start_seconds
-                ) VALUES (?, ?, ?, ?, ?)
+                )
+                SELECT ?, ?, ?, ?, ?
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM word_contexts
+                    WHERE vocabulary_item_id = ?
+                      AND sentence = ?
+                      AND media_fingerprint = ?
+                      AND subtitle_index = ?
+                      AND start_seconds = ?
+                )
                 """,
-                (
-                    item_id,
-                    ctx["sentence"],
-                    ctx["media_fingerprint"],
-                    ctx["subtitle_index"],
-                    ctx["start_seconds"],
-                ),
+                context_values + context_values,
             )
         saved = conn.execute(
             """

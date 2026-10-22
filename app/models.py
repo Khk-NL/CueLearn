@@ -11,12 +11,18 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-# 匿名标识：字母或数字开头，只允许字母、数字、下划线和连字符。邮箱、姓名放不进来。
+# 匿名标识仅约束格式，调用方仍须避免把真实姓名等个人信息当作标识。
 USER_KEY_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+
+# SQLite INTEGER 使用有符号64位，入库前验证，避免绑定超大整数时返回500。
+SQLITE_MAX_INTEGER = 2**63 - 1
 
 # payload 里出现这些键就拒绝，避免把身份信息混进行为日志。
 _SENSITIVE_KEYS = frozenset(
-    {"password", "passwd", "email", "phone", "mobile", "real_name", "name", "identity"}
+    {
+        "password", "passwd", "email", "phone", "mobile", "real_name", "name", "identity",
+        "token", "access_token", "refresh_token", "api_key", "secret", "authorization", "cookie",
+    }
 )
 
 
@@ -49,6 +55,7 @@ class TargetType(str, Enum):
 
 
 def _reject_sensitive(value: object) -> None:
+    """递归检查对象与数组中的敏感键，不将凭据作为学习事件保存。"""
     if isinstance(value, dict):
         for key, item in value.items():
             if str(key).lower() in _SENSITIVE_KEYS:
@@ -62,10 +69,12 @@ def _reject_sensitive(value: object) -> None:
 class WordContextCreate(BaseModel):
     """收藏生词时一并提交的一条语境。"""
 
+    model_config = ConfigDict(extra="forbid")
+
     sentence: str = Field(min_length=1, max_length=1000, description="字幕原句")
     media_fingerprint: str = Field(min_length=1, max_length=128, description="视频内容指纹，不是本机路径")
-    subtitle_index: int = Field(ge=0, description="字幕序号，从 0 开始")
-    start_seconds: float = Field(ge=0, description="该句起始秒数")
+    subtitle_index: int = Field(strict=True, ge=0, le=SQLITE_MAX_INTEGER, description="字幕序号，从 0 开始")
+    start_seconds: float = Field(strict=True, ge=0, allow_inf_nan=False, description="该句起始秒数")
 
     @field_validator("sentence", "media_fingerprint")
     @classmethod
@@ -97,6 +106,8 @@ class WordContextResponse(BaseModel):
 class VocabularyItemCreate(BaseModel):
     """对应确认单 learning/word/save：单词、释义和至少一条语境。"""
 
+    model_config = ConfigDict(extra="forbid")
+
     user_key: str = Field(pattern=USER_KEY_PATTERN, description="匿名用户标识")
     word: str = Field(min_length=1, max_length=80, description="单词或短语")
     definition: str = Field(min_length=1, max_length=500, description="释义")
@@ -125,13 +136,15 @@ class VocabularyItemResponse(BaseModel):
 class ReviewEventCreate(BaseModel):
     """对应确认单 learning/review。reviewed_at 不由客户端提交。"""
 
+    model_config = ConfigDict(extra="forbid")
+
     user_key: str = Field(pattern=USER_KEY_PATTERN, description="匿名用户标识")
     # 词条 id 是数据库自增主键，从 1 开始。0 或负数不可能对应真实词条，
     # 属于「填错数据」而不是「找不到数据」，因此在模型层返回 422，
     # 而不是交给存储层再报 404。
-    vocabulary_item_id: int = Field(ge=1, description="词条 id，对应确认单里的 wordId")
+    vocabulary_item_id: int = Field(strict=True, ge=1, le=SQLITE_MAX_INTEGER, description="词条 id，对应确认单里的 wordId")
     rating: ReviewRating
-    duration_ms: int | None = Field(default=None, ge=0, description="作答时长（毫秒），扩展字段，可不传")
+    duration_ms: int | None = Field(default=None, strict=True, ge=0, le=SQLITE_MAX_INTEGER, description="作答时长（毫秒），扩展字段，可不传")
 
 
 class ReviewEventResponse(BaseModel):
@@ -157,6 +170,8 @@ class ReviewEventList(BaseModel):
 
 class LearningEventCreate(BaseModel):
     """一条行为事件。payload 是 JSON 对象文本。"""
+
+    model_config = ConfigDict(extra="forbid")
 
     user_key: str = Field(pattern=USER_KEY_PATTERN, description="匿名用户标识")
     event_type: LearningEventType

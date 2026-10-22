@@ -3,7 +3,7 @@ CueLearn 视频语境学习系统 · 学习数据后端。
 
 只做核心学习数据：收藏生词及语境、提交复习、上报行为、查看统计。
 视频播放、ASR、AI 问答、账号认证、教师端不在这里。
-数据在 SQLite（learn.db），用来模拟尚未配置的 PocketBase 集合。
+课程数据保存在独立 SQLite（learn.db）；不读取或替代桌面端 PocketBase 数据。
 
     uv run fastapi dev app/main.py
     uv run pytest -v
@@ -13,12 +13,14 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from html import escape
 
-from fastapi import FastAPI, HTTPException, Query, status
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Path, Query, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from app import storage
 from app.models import (
     USER_KEY_PATTERN,
+    SQLITE_MAX_INTEGER,
     HealthResponse,
     LearningEventCreate,
     LearningEventResponse,
@@ -43,12 +45,26 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="CueLearn 学习数据服务",
     description=(
-        "CueLearn 视频语境学习系统。SQLite 模拟 PocketBase 上的生词、复习与行为事件。"
+        "CueLearn 课程用独立 SQLite 生词、复习与行为事件服务，不替代桌面端 PocketBase。"
         "行为采集不接收真实姓名、邮箱、密码等敏感信息。"
     ),
     version="0.3.0",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(_request: Request, error: RequestValidationError) -> JSONResponse:
+    """返回字段位置、类型与原因；省略可能含凭据或无穷数值的原始输入。"""
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        content={
+            "detail": [
+                {key: item[key] for key in ("type", "loc", "msg")}
+                for item in error.errors()
+            ]
+        },
+    )
 
 
 @app.get("/", tags=["系统"], summary="服务首页", response_model=RootResponse)
@@ -101,7 +117,8 @@ def create_vocabulary_item(payload: VocabularyItemCreate):
     summary="查询词条及其语境",
     response_model=VocabularyItemResponse,
 )
-def get_vocabulary_item(vocabulary_item_id: int):
+def get_vocabulary_item(vocabulary_item_id: int = Path(ge=1, le=SQLITE_MAX_INTEGER)):
+    """验证路径主键的可存储范围；合法但不存在的词条返回404。"""
     item = storage.get_vocabulary_item(vocabulary_item_id)
     if item is None:
         raise HTTPException(status_code=404, detail=f"词条 {vocabulary_item_id} 不存在")
