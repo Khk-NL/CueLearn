@@ -49,3 +49,5 @@ Windows 本机可双击根目录 `start-cuelearn.cmd` 启动原有桌面前端�
 ## 课程交互原型
 
 解压根目录 `CueLearn-学习原型.zip` 后打开其中的 `index.html`，可离线演示目标、视频语境、复习纠错、来源核对、测验与学习评价。根目录保留临时HTML/CSS和4张PNG；原有Electron入口未覆盖。原型使用合成数据，详见 [原型交付说明](docs/prototype-delivery.md)。
+
+最新课程成果：[业务后端改造与数据采集交付报告（2026-10-29）](project-docs/业务后端改造与数据采集交付报告.md)，整合组员PR并通过127项后端测试。
