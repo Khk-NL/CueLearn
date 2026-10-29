@@ -203,6 +203,15 @@ def test_review_other_users_word_returns_404(client: TestClient):
     assert keys == ["anon-owner"]
 
 
+def test_review_non_positive_word_id_returns_422(client: TestClient):
+    """词条 id 从 1 起。0 属于填错数据（422），不是找不到数据（404）。"""
+    resp = client.post(
+        "/review_events",
+        json={"user_key": "anon-a", "vocabulary_item_id": 0, "rating": "vague"},
+    )
+    assert resp.status_code == 422
+
+
 def test_review_invalid_rating_returns_422(client: TestClient):
     """不支持的评分返回422。"""
     item = _save_word(client).json()
@@ -255,6 +264,21 @@ def test_learning_event_is_stored(client: TestClient):
     assert body["event_type"] == "hint_requested"
     assert body["payload"] == '{"level":"syntax"}'
     assert body["created_at"]
+
+
+def test_learning_event_rejects_file_path_target_id(client: TestClient):
+    """对象标识是媒体指纹或业务 id；本机路径属于敏感信息，写进事件表即为越界。"""
+    resp = client.post(
+        "/events",
+        json={
+            "user_key": "anon-a",
+            "event_type": "sentence_replayed",
+            "target_type": "media",
+            "target_id": "D:/videos/lecture.mp4",
+        },
+    )
+    assert resp.status_code == 422
+    assert "本机文件路径" in str(resp.json()["detail"])
 
 
 def test_learning_event_invalid_type_returns_422(client: TestClient):
